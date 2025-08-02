@@ -127,6 +127,100 @@ export const mockSystemMetrics = [
   },
 ];
 
+// Tenants Data
+export const mockTenantsData = [
+  {
+    id: 'tenant-1',
+    name: 'TechCorp Solutions',
+    slug: 'techcorp-solutions',
+    schemaName: 'techcorp_schema',
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-01-20'),
+    isActive: true,
+  },
+  {
+    id: 'tenant-2',
+    name: 'ShopDirect Retail',
+    slug: 'shopdirect-retail',
+    schemaName: 'shopdirect_schema',
+    createdAt: new Date('2024-01-10'),
+    updatedAt: new Date('2024-01-18'),
+    isActive: true,
+  },
+  {
+    id: 'tenant-3',
+    name: 'DataAnalytics Inc',
+    slug: 'dataanalytics-inc',
+    schemaName: 'dataanalytics_schema',
+    createdAt: new Date('2024-01-05'),
+    updatedAt: new Date('2024-01-15'),
+    isActive: true,
+  },
+  {
+    id: 'tenant-4',
+    name: 'CloudTech Solutions',
+    slug: 'cloudtech-solutions',
+    schemaName: 'cloudtech_schema',
+    createdAt: new Date('2024-01-12'),
+    updatedAt: new Date('2024-01-19'),
+    isActive: true,
+  },
+  {
+    id: 'tenant-5',
+    name: 'BusinessInsights',
+    slug: 'businessinsights',
+    schemaName: 'businessinsights_schema',
+    createdAt: new Date('2024-01-08'),
+    updatedAt: new Date('2024-01-16'),
+    isActive: false,
+  },
+  {
+    id: 'tenant-6',
+    name: 'EcommerceStore',
+    slug: 'ecommercestore',
+    schemaName: 'ecommerce_schema',
+    createdAt: new Date('2024-01-03'),
+    updatedAt: new Date('2024-01-14'),
+    isActive: true,
+  },
+  {
+    id: 'tenant-7',
+    name: 'ReportingSuite',
+    slug: 'reportingsuite',
+    schemaName: 'reporting_schema',
+    createdAt: new Date('2024-01-20'),
+    updatedAt: new Date('2024-01-25'),
+    isActive: true,
+  },
+  {
+    id: 'tenant-8',
+    name: 'WarehousePro',
+    slug: 'warehousepro',
+    schemaName: 'warehouse_schema',
+    createdAt: new Date('2024-01-07'),
+    updatedAt: new Date('2024-01-17'),
+    isActive: true,
+  },
+  {
+    id: 'tenant-9',
+    name: 'MobileApp Dev',
+    slug: 'mobileapp-dev',
+    schemaName: 'mobileapp_schema',
+    createdAt: new Date('2024-01-25'),
+    updatedAt: new Date('2024-01-30'),
+    isActive: true,
+  },
+  {
+    id: 'tenant-10',
+    name: 'InactiveCorp',
+    slug: 'inactivecorp',
+    schemaName: 'inactive_schema',
+    createdAt: new Date('2023-12-15'),
+    updatedAt: new Date('2024-01-05'),
+    isActive: false,
+  },
+];
+
 // System Logs Data
 export const mockLogData = [
   {
