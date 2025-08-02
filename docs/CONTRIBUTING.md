@@ -118,7 +118,7 @@ tenanta/
 - **`apps/database-api`** - Main API with authentication webhook handling and core business logic
 - **`apps/client-api`** - Client-specific API with caching and regional optimizations
 - **`apps/admin-api`** - Admin panel API with security and audit functions
-- **`apps/client`** - User interface built with Next.js
+- **`apps/client`** - User interface built with Next.js including database console
 - **`apps/admin`** - Admin panel built with Next.js
 - **`apps/database`** - Database schemas, migrations, and seed data
 
@@ -129,6 +129,7 @@ tenanta/
 - **`packages/auth`** - Authentication and authorization utilities
 - **`packages/logging`** - Centralized logging and monitoring
 - **`packages/types`** - Shared TypeScript type definitions
+- **`packages/console`** - Database console utilities and components
 
 ## 📝 Coding Standards
 
@@ -147,6 +148,7 @@ tenanta/
 - **Database schemas**: Use `packages/database-schema` for schema definitions
 - **Authentication**: Use `packages/auth` for auth-related utilities
 - **Logging**: Use `packages/logging` for centralized logging
+- **Database Console**: Use `packages/console` for console-related utilities
 
 ### JavaScript/TypeScript Standards
 
@@ -253,6 +255,7 @@ Brief description of changes
 - [ ] client
 - [ ] admin
 - [ ] shared packages
+- [ ] database console
 
 ## Testing
 - [ ] Unit tests added/updated
@@ -315,6 +318,7 @@ A clear description of what you expected to happen.
 - [ ] admin-api
 - [ ] client
 - [ ] admin
+- [ ] database console
 
 **Additional context**
 Add any other context about the problem here.
@@ -341,6 +345,7 @@ A clear description of any alternative solutions.
 - [ ] client
 - [ ] admin
 - [ ] shared packages
+- [ ] database console
 
 **Additional context**
 Add any other context or screenshots about the feature request.

@@ -8,7 +8,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "nx run-many --target=dev --all",
+    "dev": "cd apps/database-api && npm run dev",
+    "dev:nx": "nx serve database-api",
     "build": "nx run-many --target=build --all",
     "test": "nx run-many --target=test --all",
     "lint": "nx run-many --target=lint --all",
@@ -25,7 +26,9 @@
     "graph": "nx graph",
     "affected:build": "nx affected --target=build",
     "affected:test": "nx affected --target=test",
-    "affected:lint": "nx affected --target=lint"
+    "affected:lint": "nx affected --target=lint",
+    "install:all": "npm install && npm run build:packages",
+    "build:packages": "nx run-many --target=build --projects=@tenanta/shared,@tenanta/types,@tenanta/logging"
   },
   "keywords": [
     "multi-tenant",
@@ -52,7 +55,7 @@
   "devDependencies": {
     "@nrwl/eslint-plugin-nx": "^17.0.0",
     "@nrwl/jest": "^17.0.0",
-    "@nrwl/js": "^17.0.0",
+    "@nrwl/js": "^17.3.2",
     "@nrwl/node": "^17.0.0",
     "@nrwl/workspace": "^17.0.0",
     "@types/jest": "^29.5.0",
@@ -83,4 +86,4 @@
       "prettier --write"
     ]
   }
-} 
+}

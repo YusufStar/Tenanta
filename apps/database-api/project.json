@@ -1,0 +1,43 @@
+{
+  "name": "database-api",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/database-api/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/database-api",
+        "main": "apps/database-api/src/index.ts",
+        "tsConfig": "apps/database-api/tsconfig.json",
+        "assets": ["apps/database-api/src/assets"]
+      }
+    },
+    "serve": {
+      "executor": "@nrwl/js:node",
+      "options": {
+        "buildTarget": "database-api:build"
+      }
+    },
+    "dev": {
+      "executor": "@nrwl/js:node",
+      "options": {
+        "buildTarget": "database-api:build",
+        "watch": true
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/eslint:lint"
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/database-api/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+} 

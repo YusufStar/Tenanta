@@ -104,6 +104,9 @@ client-api/
   - Project-based database organization
   - Real-time updates
   - Schema visualization and editing
+  - Web-based PostgreSQL console
+  - Web-based Redis console
+  - SQL query execution interface
 
 **Structure**:
 ```
@@ -112,10 +115,12 @@ client/
 │   ├── components/                # React components
 │   │   ├── schema/               # Schema management components
 │   │   ├── database/             # Database management components
+│   │   ├── console/              # Database console components
 │   │   └── common/               # Shared components
 │   ├── pages/                     # Next.js pages
 │   │   ├── projects/             # Project management pages
 │   │   ├── schemas/              # Schema management pages
+│   │   ├── console/              # Database console pages
 │   │   └── dashboard/            # Dashboard pages
 │   ├── hooks/                     # Custom React hooks
 │   ├── utils/                     # Utility functions

@@ -1,0 +1,440 @@
+{
+  "version": "6.0",
+  "nxVersion": "17.3.2",
+  "deps": {
+    "@nrwl/eslint-plugin-nx": "^17.0.0",
+    "@nrwl/jest": "^17.0.0",
+    "@nrwl/js": "^17.3.2",
+    "@nrwl/node": "^17.0.0",
+    "@nrwl/workspace": "^17.0.0",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-jest": "^27.0.0",
+    "eslint-plugin-node": "^11.0.0",
+    "husky": "^8.0.0",
+    "jest": "^29.0.0",
+    "lint-staged": "^13.0.0",
+    "nx": "^17.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "pathMappings": {
+    "@tenanta/shared": [
+      "packages/shared/src"
+    ],
+    "@tenanta/types": [
+      "packages/types/src"
+    ],
+    "@tenanta/auth": [
+      "packages/auth/src"
+    ],
+    "@tenanta/logging": [
+      "packages/logging/src"
+    ],
+    "@tenanta/database-schema": [
+      "packages/database-schema/src"
+    ]
+  },
+  "nxJsonPlugins": [],
+  "pluginsConfig": {
+    "@nx/js": {
+      "analyzeSourceFiles": false
+    }
+  },
+  "fileMap": {
+    "nonProjectFiles": [
+      {
+        "file": "docs/CONTRIBUTING.md",
+        "hash": "12404562964479950615"
+      },
+      {
+        "file": ".prettierrc",
+        "hash": "17975828725053709381"
+      },
+      {
+        "file": "tsconfig.base.json",
+        "hash": "15139323125739742568"
+      },
+      {
+        "file": "docker-compose.yml",
+        "hash": "1079752612325642535"
+      },
+      {
+        "file": ".eslintrc.json",
+        "hash": "10288403432871767399"
+      },
+      {
+        "file": "package.json",
+        "hash": "7539906511875483206"
+      },
+      {
+        "file": "bun.lock",
+        "hash": "13084207076709957251"
+      },
+      {
+        "file": ".gitignore",
+        "hash": "3591207177908501420"
+      },
+      {
+        "file": "routes.md",
+        "hash": "15138999439868537415"
+      },
+      {
+        "file": "README.md",
+        "hash": "8499844800834373289"
+      },
+      {
+        "file": "docs/SECURITY.md",
+        "hash": "8090277066265011931"
+      },
+      {
+        "file": "jest.setup.js",
+        "hash": "14063721119517560710"
+      },
+      {
+        "file": "package-lock.json",
+        "hash": "17496861341107993272"
+      },
+      {
+        "file": "jest.preset.js",
+        "hash": "17428289522824292244"
+      },
+      {
+        "file": "docs/CHANGELOG.md",
+        "hash": "9801695985889890117"
+      },
+      {
+        "file": "docs/CODE_OF_CONDUCT.md",
+        "hash": "13328106439509284875"
+      },
+      {
+        "file": "env.example",
+        "hash": "12359437513421821962"
+      },
+      {
+        "file": "docs/PROJECT_STRUCTURE.md",
+        "hash": "16354493802324034421"
+      },
+      {
+        "file": "LICENSE",
+        "hash": "17866613121502910594"
+      },
+      {
+        "file": "nx.json",
+        "hash": "15461026159503781243"
+      }
+    ],
+    "projectFileMap": {
+      "@tenanta/types": [
+        {
+          "file": "packages/types/package.json",
+          "hash": "13758185114313518982",
+          "deps": [
+            "npm:@types/node",
+            "npm:typescript",
+            "npm:tsx"
+          ]
+        },
+        {
+          "file": "packages/types/src/index.ts",
+          "hash": "15952327698755949901"
+        },
+        {
+          "file": "packages/types/tsconfig.json",
+          "hash": "15430686827053927512"
+        }
+      ],
+      "@tenanta/database": [
+        {
+          "file": "apps/database/env.example",
+          "hash": "5778017982659288731"
+        },
+        {
+          "file": "apps/database/package.json",
+          "hash": "3886135327960193733",
+          "deps": [
+            "npm:pg",
+            "npm:ioredis",
+            "npm:dotenv",
+            "npm:winston",
+            "npm:@types/pg",
+            "npm:@types/node",
+            "npm:typescript",
+            "npm:ts-node",
+            "npm:jest",
+            "npm:@types/jest",
+            "npm:eslint",
+            "npm:prettier"
+          ]
+        },
+        {
+          "file": "apps/database/redis/redis.conf",
+          "hash": "15907824987864694938"
+        },
+        {
+          "file": "apps/database/redis/users.acl",
+          "hash": "4477999872918592936"
+        },
+        {
+          "file": "apps/database/src/config/database.ts",
+          "hash": "5843488430071210617"
+        },
+        {
+          "file": "apps/database/src/config/redis.ts",
+          "hash": "5175144221828743616"
+        },
+        {
+          "file": "apps/database/src/index.ts",
+          "hash": "3572836079722608698"
+        },
+        {
+          "file": "apps/database/src/migrations/run-migrations.ts",
+          "hash": "5119559154212893792"
+        },
+        {
+          "file": "apps/database/src/schemas/init.sql",
+          "hash": "17534653606121902900"
+        },
+        {
+          "file": "apps/database/src/seeds/run-seeds.ts",
+          "hash": "15795051495558716209"
+        },
+        {
+          "file": "apps/database/tsconfig.json",
+          "hash": "18053262506701940579"
+        }
+      ],
+      "database-api": [
+        {
+          "file": "apps/database-api/env.example",
+          "hash": "1899680794143987586"
+        },
+        {
+          "file": "apps/database-api/package.json",
+          "hash": "2738294330647003793",
+          "deps": [
+            "npm:express",
+            "npm:cors",
+            "npm:helmet",
+            "npm:morgan",
+            "npm:dotenv",
+            "npm:pg",
+            "npm:redis",
+            "npm:jsonwebtoken",
+            "npm:bcryptjs",
+            "npm:express-rate-limit",
+            "npm:express-validator",
+            "npm:ws",
+            "npm:compression",
+            "npm:express-winston",
+            "npm:winston",
+            "@tenanta/shared",
+            "@tenanta/types",
+            "@tenanta/logging",
+            "npm:@types/express",
+            "npm:@types/cors",
+            "npm:@types/morgan",
+            "npm:@types/pg",
+            "npm:@types/jsonwebtoken",
+            "npm:@types/bcryptjs",
+            "npm:@types/ws",
+            "npm:@types/compression",
+            "npm:@types/node",
+            "npm:tsx",
+            "npm:typescript",
+            "npm:jest",
+            "npm:@types/jest",
+            "npm:eslint",
+            "npm:@typescript-eslint/eslint-plugin",
+            "npm:@typescript-eslint/parser"
+          ]
+        },
+        {
+          "file": "apps/database-api/project.json",
+          "hash": "326634688614999906"
+        },
+        {
+          "file": "apps/database-api/src/config/database.ts",
+          "hash": "10353605400056634671"
+        },
+        {
+          "file": "apps/database-api/src/config/redis.ts",
+          "hash": "9228397430986567836"
+        },
+        {
+          "file": "apps/database-api/src/index.ts",
+          "hash": "8563666669894972913"
+        },
+        {
+          "file": "apps/database-api/src/middleware/errorHandler.ts",
+          "hash": "5362068512757452607"
+        },
+        {
+          "file": "apps/database-api/src/middleware/notFoundHandler.ts",
+          "hash": "3333236666369264139"
+        },
+        {
+          "file": "apps/database-api/src/middleware/requestLogger.ts",
+          "hash": "13931189433862959840"
+        },
+        {
+          "file": "apps/database-api/src/server.ts",
+          "hash": "17522348735687526167"
+        },
+        {
+          "file": "apps/database-api/src/services/schemaService.ts",
+          "hash": "17908475887606918351"
+        },
+        {
+          "file": "apps/database-api/src/services/tenantService.ts",
+          "hash": "18280432967948749152"
+        },
+        {
+          "file": "apps/database-api/src/types/index.ts",
+          "hash": "7900580638998467207"
+        },
+        {
+          "file": "apps/database-api/src/utils/response.ts",
+          "hash": "3876149295233809803"
+        },
+        {
+          "file": "apps/database-api/src/utils/validation.ts",
+          "hash": "5887952868915031375"
+        },
+        {
+          "file": "apps/database-api/src/websocket/index.ts",
+          "hash": "14070061432291317407"
+        },
+        {
+          "file": "apps/database-api/tsconfig.json",
+          "hash": "2348138267133752414"
+        }
+      ],
+      "@tenanta/shared": [
+        {
+          "file": "packages/shared/package.json",
+          "hash": "17351183509839173047",
+          "deps": [
+            "npm:uuid",
+            "npm:bcryptjs",
+            "npm:jsonwebtoken",
+            "npm:@types/uuid",
+            "npm:@types/bcryptjs",
+            "npm:@types/jsonwebtoken",
+            "npm:@types/node",
+            "npm:typescript",
+            "npm:tsx"
+          ]
+        },
+        {
+          "file": "packages/shared/src/index.ts",
+          "hash": "12495537064402941136"
+        },
+        {
+          "file": "packages/shared/src/utils/crypto.ts",
+          "hash": "9307041661919435038"
+        },
+        {
+          "file": "packages/shared/src/utils/helpers.ts",
+          "hash": "12555039701131964545"
+        },
+        {
+          "file": "packages/shared/src/utils/validation.ts",
+          "hash": "7651216497176684807"
+        },
+        {
+          "file": "packages/shared/tsconfig.json",
+          "hash": "15430686827053927512"
+        }
+      ],
+      "@tenanta/logging": [
+        {
+          "file": "packages/logging/package.json",
+          "hash": "6956357632516405196",
+          "deps": [
+            "npm:winston",
+            "npm:winston-daily-rotate-file",
+            "npm:@types/node",
+            "npm:typescript",
+            "npm:tsx"
+          ]
+        },
+        {
+          "file": "packages/logging/src/index.ts",
+          "hash": "6393904411858670271"
+        },
+        {
+          "file": "packages/logging/tsconfig.json",
+          "hash": "15430686827053927512"
+        }
+      ],
+      "@tenanta/client": [
+        {
+          "file": "apps/client/env.example",
+          "hash": "7719978287441583366"
+        },
+        {
+          "file": "apps/client/package.json",
+          "hash": "6120953758520573789",
+          "deps": [
+            "npm:next",
+            "npm:react",
+            "npm:react-dom",
+            "@tenanta/shared",
+            "@tenanta/types",
+            "npm:@types/node",
+            "npm:@types/react",
+            "npm:@types/react-dom",
+            "npm:typescript",
+            "npm:eslint",
+            "npm:eslint-config-next",
+            "npm:jest",
+            "npm:@types/jest"
+          ]
+        }
+      ],
+      "@tenanta/client-api": [
+        {
+          "file": "apps/client-api/env.example",
+          "hash": "5771845588651497143"
+        },
+        {
+          "file": "apps/client-api/package.json",
+          "hash": "11512953663963144804",
+          "deps": [
+            "npm:express",
+            "npm:cors",
+            "npm:helmet",
+            "npm:morgan",
+            "npm:dotenv",
+            "npm:redis",
+            "npm:express-rate-limit",
+            "npm:express-validator",
+            "npm:compression",
+            "npm:express-winston",
+            "npm:winston",
+            "@tenanta/shared",
+            "@tenanta/types",
+            "@tenanta/logging",
+            "npm:@types/express",
+            "npm:@types/cors",
+            "npm:@types/morgan",
+            "npm:@types/compression",
+            "npm:@types/node",
+            "npm:tsx",
+            "npm:typescript",
+            "npm:jest",
+            "npm:@types/jest",
+            "npm:eslint",
+            "npm:@typescript-eslint/eslint-plugin",
+            "npm:@typescript-eslint/parser"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker Compose configuration for all services
 - Comprehensive documentation
 - Security policies and contributing guidelines
+- Web-based database console for PostgreSQL and Redis
 
 ### Changed
 - Migrated from individual repositories to monorepo structure
@@ -46,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Security policies and guidelines
 - Open source licensing (MIT)
 - Free platform architecture
+- Web-based PostgreSQL and Redis console interface
 
 ### Changed
 - N/A

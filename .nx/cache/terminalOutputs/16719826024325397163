@@ -1,0 +1,19 @@
+
+> @tenanta/client@1.0.0 test
+> jest
+
+[1mNo tests found, exiting with code 1[22m
+Run with `--passWithNoTests` to exit with code 0
+In [1mC:\Users\yyili\Desktop\Tenanta\apps\client[22m
+  1 file checked.
+  testMatch: [33m**/__tests__/**/*.[jt]s?(x), **/?(*.)+(spec|test).[tj]s?(x)[39m - 0 matches
+  testPathIgnorePatterns: [33m\\node_modules\\[39m - 1 match
+  testRegex:  - 0 matches
+Pattern:  - 0 matches
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path C:\Users\yyili\Desktop\Tenanta\apps\client
+npm error workspace @tenanta/client@1.0.0
+npm error location C:\Users\yyili\Desktop\Tenanta\apps\client
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c jest

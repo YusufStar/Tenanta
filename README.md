@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](docs/code_of_conduct.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](docs/CODE_OF_CONDUCT.md)
 
 **Version:** v1.0.0  
 **Author:** Yusuf Yıldız  
@@ -28,13 +28,14 @@ Tenanta is a modular, scalable, and secure multi-tenant backend platform designe
 
 - 🔐 **Multi-tenant Architecture** - Isolated data per tenant with schema-based separation
 - 🔄 **Dynamic Schema Management** - Create and manage custom database schemas within projects
-- 🛡️ **Advanced Security** - Role-based access control (RBAC) for local database system
+- 🛡️ **Advanced Security** - Input validation and sanitization for local database system
 - 🆓 **Free Platform** - Completely free multi-tenant platform with no payment requirements
 - 📊 **Real-time Monitoring** - Centralized logging with AI-powered analytics
 - 🚀 **Scalable Design** - Microservices architecture with Docker support
 - 📱 **Modern APIs** - RESTful APIs with WebSocket support for real-time features
 - 🏗️ **Monorepo Structure** - Efficient development with shared code and tooling
 - 🔄 **Redis Multi-Database** - Isolated caching and session management per service
+- 💻 **Web Database Console** - Built-in PostgreSQL and Redis management interface
 
 ## 🏗️ Architecture
 
@@ -49,7 +50,7 @@ Frontend (Client)  ⇄  client-api  ⇄  database-api  ⇄  database
 - **`database-api`** - Main API layer handling all core operations, schema management, and data processing
 - **`client-api`** - Regional and client-specific API operations, proxy or caching tasks
 - **`database`** - PostgreSQL database with multi-tenant support and dynamic schema management
-- **`client`** - User interface (Next.js/React) with schema creation and management capabilities
+- **`client`** - User interface (Next.js/React) with schema creation, management capabilities, and web-based database console
 
 ## 📁 Monorepo Structure
 
@@ -62,8 +63,6 @@ tenanta/
 │   └── database/                  # Database schemas and migrations
 ├── packages/                      # Shared packages
 │   ├── shared/                    # Common utilities and middleware
-│   ├── database-schema/           # Database schema definitions
-│   ├── auth/                      # Authentication utilities
 │   ├── logging/                   # Centralized logging
 │   └── types/                     # Shared TypeScript types
 ├── docs/                          # Documentation
@@ -74,8 +73,6 @@ tenanta/
 ### Shared Packages
 
 - **`@tenanta/shared`** - Common utilities, middleware, and helper functions
-- **`@tenanta/database-schema`** - Database schema definitions and migrations
-- **`@tenanta/auth`** - Authentication and authorization utilities
 - **`@tenanta/logging`** - Centralized logging and monitoring
 - **`@tenanta/types`** - Shared TypeScript type definitions
 
@@ -85,7 +82,7 @@ Tenanta uses Redis with multi-database support for isolated caching and session 
 
 ### Database Assignments
 - **Database 0**: Database API (Main operations)
-- **Database 1**: Client API (Caching and user sessions)
+- **Database 1**: Client API (Caching and sessions)
 - **Database 2-15**: Reserved for future use
 - **Database 16-31**: Available for additional services
 
@@ -203,13 +200,15 @@ Comprehensive API documentation is available for each service:
 
 #### Database API (Main)
 - `GET /api/v1/tenants/:id` - Get tenant information
-- `POST /api/v1/users` - Create user
+- `POST /api/v1/tenants` - Create new tenant
+- `GET /api/v1/schemas` - Get available schemas
+- `POST /api/v1/schemas` - Create new schema
+- `POST /api/v1/console/sql` - Execute SQL queries
+- `POST /api/v1/console/redis` - Execute Redis commands
 
 #### Client API
-- `GET /api/v1/client/profile` - Get user profile
-- `PUT /api/v1/client/settings` - Update user settings
-
-
+- `GET /api/v1/client/status` - Get service status
+- `PUT /api/v1/client/config` - Update client configuration
 
 ## 🔧 Configuration
 
@@ -257,7 +256,6 @@ npm run test
 # Run tests for specific application
 nx test database-api
 nx test client-api
-nx test admin-api
 
 # Run tests with coverage
 nx test database-api --coverage
@@ -290,7 +288,7 @@ nx serve database-api --prod
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! Please read our [Contributing Guide](docs/contributing.md) for details on our code of conduct and the process for submitting pull requests.
+We welcome contributions from the community! Please read our [Contributing Guide](docs/CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ### Development Workflow
 
@@ -309,7 +307,6 @@ We welcome contributions from the community! Please read our [Contributing Guide
 - **Adding new packages**: Use `nx generate @nrwl/js:library`
 - **Shared code**: Place common utilities in `packages/shared`
 - **Type definitions**: Use `packages/types` for shared types
-- **Database schemas**: Use `packages/database-schema`
 
 ### Code Standards
 
@@ -321,12 +318,10 @@ We welcome contributions from the community! Please read our [Contributing Guide
 
 ## 🛡️ Security
 
-We take security seriously. Please read our [Security Policy](docs/security.md) for reporting vulnerabilities.
+We take security seriously. Please read our [Security Policy](docs/SECURITY.md) for reporting vulnerabilities.
 
 ### Security Features
 
-- JWT-based authentication
-- Role-based access control (RBAC)
 - Input validation and sanitization
 - SQL injection prevention
 - XSS protection
@@ -340,15 +335,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📖 Documentation
 
-- [Contributing Guide](docs/contributing.md)
-- [Code of Conduct](docs/code_of_conduct.md)
-- [Security Policy](docs/security.md)
-- [Changelog](docs/changelog.md)
-- [Project Structure](docs/project_structure.md)
+- [Contributing Guide](docs/CONTRIBUTING.md)
+- [Code of Conduct](docs/CODE_OF_CONDUCT.md)
+- [Security Policy](docs/SECURITY.md)
+- [Changelog](docs/CHANGELOG.md)
+- [Project Structure](docs/PROJECT_STRUCTURE.md)
 
 ## 🙏 Acknowledgments
-
-
 
 - [PostgreSQL](https://postgresql.org) for the database
 - [Redis](https://redis.io) for caching and sessions
