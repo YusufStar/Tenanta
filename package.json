@@ -1,0 +1,86 @@
+{
+  "name": "tenanta",
+  "version": "1.0.0",
+  "description": "Open Source Free Multi-Tenant Backend Platform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "nx run-many --target=dev --all",
+    "build": "nx run-many --target=build --all",
+    "test": "nx run-many --target=test --all",
+    "lint": "nx run-many --target=lint --all",
+    "format": "nx format:write",
+    "migrate": "nx run database:migrate",
+    "seed": "nx run database:seed",
+    "seed:dev": "nx run database:seed:dev",
+    "db:setup": "nx run database:setup",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "clean": "nx reset && nx run-many --target=clean --all",
+    "graph": "nx graph",
+    "affected:build": "nx affected --target=build",
+    "affected:test": "nx affected --target=test",
+    "affected:lint": "nx affected --target=lint"
+  },
+  "keywords": [
+    "multi-tenant",
+    "backend",
+    "api",
+    "free",
+    "open-source",
+    "postgresql",
+    "typescript",
+    "nodejs",
+    "docker",
+    "monorepo"
+  ],
+  "author": "Yusuf Yıldız",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yusufstar/tenanta.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yusufstar/tenanta/issues"
+  },
+  "homepage": "https://github.com/yusufstar/tenanta#readme",
+  "devDependencies": {
+    "@nrwl/eslint-plugin-nx": "^17.0.0",
+    "@nrwl/jest": "^17.0.0",
+    "@nrwl/js": "^17.0.0",
+    "@nrwl/node": "^17.0.0",
+    "@nrwl/workspace": "^17.0.0",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-jest": "^27.0.0",
+    "eslint-plugin-node": "^11.0.0",
+    "husky": "^8.0.0",
+    "jest": "^29.0.0",
+    "lint-staged": "^13.0.0",
+    "nx": "^17.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+} 
