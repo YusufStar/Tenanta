@@ -16,7 +16,8 @@
     "pg": "^8.11.3",
     "ioredis": "^5.3.2",
     "dotenv": "^16.3.1",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "@tenanta/logging": "*"
   },
   "devDependencies": {
     "@types/pg": "^8.10.7",

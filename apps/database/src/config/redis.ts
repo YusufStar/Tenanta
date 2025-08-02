@@ -56,18 +56,14 @@ export const createRedisClient = (service: string = 'default'): Redis => {
     password: config.password,
     db: config.db,
     keyPrefix: config.keyPrefix,
-    retryDelayOnFailover: 100,
-    maxRetriesPerRequest: 3,
     lazyConnect: true,
     keepAlive: 30000,
-    connectTimeout: 10000,
-    commandTimeout: 5000,
+    connectTimeout: 10000
   });
 };
 
 // Service-specific Redis clients
 export const databaseApiRedis = createRedisClient('database-api');
-export const clientApiRedis = createRedisClient('client-api');
 
 // Test Redis connection
 export const testRedisConnection = async (client: Redis): Promise<boolean> => {

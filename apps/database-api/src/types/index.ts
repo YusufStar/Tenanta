@@ -19,7 +19,7 @@ export interface RedisConfig {
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
-  message?: string;
+  message?: string | undefined;
   timestamp: string;
   path?: string;
 }
@@ -33,27 +33,31 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
     hasNext: boolean;
     hasPrev: boolean;
   };
+  message?: string | undefined;
 }
 
 // Tenant types
 export interface Tenant {
   id: string;
   name: string;
-  domain: string;
-  status: 'active' | 'inactive' | 'suspended';
+  slug: string;
+  schemaName: string;
   createdAt: Date;
   updatedAt: Date;
+  isActive: boolean;
 }
 
 export interface CreateTenantRequest {
   name: string;
-  domain: string;
+  slug: string;
+  schemaName: string;
 }
 
 export interface UpdateTenantRequest {
   name?: string;
-  domain?: string;
-  status?: 'active' | 'inactive' | 'suspended';
+  slug?: string;
+  schemaName?: string;
+  isActive?: boolean;
 }
 
 // Schema types
@@ -63,7 +67,8 @@ export interface Schema {
   name: string;
   description?: string;
   version: number;
-  status: 'active' | 'inactive';
+  definition: any; // JSONB
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,12 +76,14 @@ export interface Schema {
 export interface CreateSchemaRequest {
   name: string;
   description?: string;
+  definition: any; // JSONB
 }
 
 export interface UpdateSchemaRequest {
   name?: string;
   description?: string;
-  status?: 'active' | 'inactive';
+  definition?: any; // JSONB
+  isActive?: boolean;
 }
 
 // Table types
@@ -125,34 +132,6 @@ export interface UpdateTableRequest {
   indexes?: Index[];
 }
 
-// User types
-export interface User {
-  id: string;
-  tenantId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: 'admin' | 'user' | 'viewer';
-  status: 'active' | 'inactive';
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface CreateUserRequest {
-  email: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-  role?: 'admin' | 'user' | 'viewer';
-}
-
-export interface UpdateUserRequest {
-  firstName?: string;
-  lastName?: string;
-  role?: 'admin' | 'user' | 'viewer';
-  status?: 'active' | 'inactive';
-}
-
 // WebSocket types
 export interface WebSocketMessage {
   type: string;
@@ -163,7 +142,6 @@ export interface WebSocketMessage {
 export interface WebSocketConnection {
   id: string;
   tenantId?: string;
-  userId?: string;
   connectedAt: Date;
 }
 
@@ -174,15 +152,9 @@ export interface AppError extends Error {
   code?: string;
 }
 
-// Request types
-export interface AuthenticatedRequest extends Request {
-  user?: User;
-  tenant?: Tenant;
-}
-
 export interface PaginationQuery {
-  page?: number;
-  limit?: number;
+  page?: string | number;
+  limit?: string | number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }

@@ -12,9 +12,6 @@ user default off
 # Database API User
 user database-api on >database_api_password ~tenanta:database-api:* &* +@all -@dangerous
 
-# Client API User
-user client-api on >client_api_password ~tenanta:client-api:* &* +@all -@dangerous
-
 # =============================================================================
 # Read-Only Users for Monitoring
 # =============================================================================
@@ -37,8 +34,6 @@ user dev on >dev_password ~* &* +@all
 # 
 # Patterns:
 # ~tenanta:database-api:* - Only access keys with database-api prefix
-# ~tenanta:client-api:* - Only access keys with client-api prefix  
-# ~tenanta:admin-api:* - Only access keys with admin-api prefix
 # ~* - Access all keys (for monitoring and dev)
 # 
 # Commands:

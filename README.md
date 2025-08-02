@@ -42,13 +42,12 @@ Tenanta is a modular, scalable, and secure multi-tenant backend platform designe
 The project follows a modular, scalable architecture with four main layers:
 
 ```
-Frontend (Client)  ⇄  client-api  ⇄  database-api  ⇄  database
+Frontend (Client)  ⇄  database-api  ⇄  database
 ```
 
 ### Core Components
 
 - **`database-api`** - Main API layer handling all core operations, schema management, and data processing
-- **`client-api`** - Regional and client-specific API operations, proxy or caching tasks
 - **`database`** - PostgreSQL database with multi-tenant support and dynamic schema management
 - **`client`** - User interface (Next.js/React) with schema creation, management capabilities, and web-based database console
 
@@ -58,7 +57,6 @@ Frontend (Client)  ⇄  client-api  ⇄  database-api  ⇄  database
 tenanta/
 ├── apps/                          # Applications
 │   ├── database-api/              # Main API service
-│   ├── client-api/                # Client-specific API
 │   ├── client/                    # User interface (Next.js)
 │   └── database/                  # Database schemas and migrations
 ├── packages/                      # Shared packages
@@ -82,19 +80,16 @@ Tenanta uses Redis with multi-database support for isolated caching and session 
 
 ### Database Assignments
 - **Database 0**: Database API (Main operations)
-- **Database 1**: Client API (Caching and sessions)
-- **Database 2-15**: Reserved for future use
+- **Database 1-15**: Reserved for future use
 - **Database 16-31**: Available for additional services
 
 ### Key Prefixing Strategy
 Each service uses unique key prefixes to prevent conflicts:
 - `tenanta:database-api:` - Database API keys
-- `tenanta:client-api:` - Client API keys
 
 ### Access Control Lists (ACL)
 Redis ACL provides service-specific access control:
 - **database-api user**: Access only `tenanta:database-api:*` keys
-- **client-api user**: Access only `tenanta:client-api:*` keys
 - **monitor user**: Read-only access for monitoring
 - **dev user**: Full access for development
 
@@ -124,7 +119,6 @@ Redis ACL provides service-specific access control:
    ```bash
    # Copy environment files for each application
    cp apps/database-api/env.example apps/database-api/.env
-   cp apps/client-api/env.example apps/client-api/.env
    cp apps/client/env.example apps/client/.env
    cp apps/database/env.example apps/database/.env
    
@@ -173,7 +167,6 @@ npm run graph
 
 # Run specific application
 nx serve database-api
-nx serve client-api
 nx serve client
 
 # Build specific application
@@ -193,7 +186,6 @@ npm run affected:lint
 Comprehensive API documentation is available for each service:
 
 - [Database API Documentation](./docs/api/database-api.md)
-- [Client API Documentation](./docs/api/client-api.md)
 - [Dynamic Schema Management](./docs/dynamic-schema-management.md)
 
 ### API Endpoints
@@ -206,9 +198,7 @@ Comprehensive API documentation is available for each service:
 - `POST /api/v1/console/sql` - Execute SQL queries
 - `POST /api/v1/console/redis` - Execute Redis commands
 
-#### Client API
-- `GET /api/v1/client/status` - Get service status
-- `PUT /api/v1/client/config` - Update client configuration
+
 
 ## 🔧 Configuration
 
@@ -227,9 +217,6 @@ cp env.example .env
 # Database API
 cp apps/database-api/env.example apps/database-api/.env
 
-# Client API  
-cp apps/client-api/env.example apps/client-api/.env
-
 # Client Application
 cp apps/client/env.example apps/client/.env
 
@@ -241,7 +228,6 @@ cp apps/database/env.example apps/database/.env
 
 - **Root `.env`**: Docker Compose and general configuration
 - **`apps/database-api/.env`**: Database API specific configuration
-- **`apps/client-api/.env`**: Client API specific configuration  
 - **`apps/client/.env`**: Client application configuration
 - **`apps/database/.env`**: Database management configuration
 
@@ -255,7 +241,6 @@ npm run test
 
 # Run tests for specific application
 nx test database-api
-nx test client-api
 
 # Run tests with coverage
 nx test database-api --coverage

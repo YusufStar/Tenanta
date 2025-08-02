@@ -97,10 +97,7 @@ This project and everyone participating in it is governed by our [Code of Conduc
 tenanta/
 ├── apps/                          # Applications
 │   ├── database-api/              # Main API service
-│   ├── client-api/                # Client-specific API
-│   ├── admin-api/                 # Admin panel API
 │   ├── client/                    # User interface (Next.js)
-│   ├── admin/                     # Admin panel (Next.js)
 │   └── database/                  # Database schemas and migrations
 ├── packages/                      # Shared packages
 │   ├── shared/                    # Common utilities and middleware
@@ -116,10 +113,7 @@ tenanta/
 ### Application Development
 
 - **`apps/database-api`** - Main API with authentication webhook handling and core business logic
-- **`apps/client-api`** - Client-specific API with caching and regional optimizations
-- **`apps/admin-api`** - Admin panel API with security and audit functions
 - **`apps/client`** - User interface built with Next.js including database console
-- **`apps/admin`** - Admin panel built with Next.js
 - **`apps/database`** - Database schemas, migrations, and seed data
 
 ### Shared Packages
@@ -203,7 +197,6 @@ npm run test
 
 # Run tests for specific application
 nx test database-api
-nx test client-api
 nx test admin-api
 
 # Run tests with coverage

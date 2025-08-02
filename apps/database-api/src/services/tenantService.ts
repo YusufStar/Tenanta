@@ -14,22 +14,29 @@ export class TenantService {
     try {
       await client.query('BEGIN');
 
-      // Check if tenant with same domain already exists
+      // Check if tenant with same slug already exists
       const existingTenant = await client.query(
-        'SELECT id FROM tenants WHERE domain = $1',
-        [data.domain]
+        'SELECT id FROM public.tenants WHERE slug = $1',
+        [data.slug]
       );
 
       if (existingTenant.rows.length > 0) {
-        throw new Error('Tenant with this domain already exists');
+        throw new Error('Tenant with this slug already exists');
       }
 
       // Create tenant
       const result = await client.query(
-        `INSERT INTO tenants (name, domain, status) 
-         VALUES ($1, $2, 'active') 
-         RETURNING *`,
-        [data.name, data.domain]
+        `INSERT INTO public.tenants (name, slug, schema_name, is_active) 
+         VALUES ($1, $2, $3, true) 
+         RETURNING 
+           id,
+           name,
+           slug,
+           schema_name as "schemaName",
+           created_at as "createdAt",
+           updated_at as "updatedAt",
+           is_active as "isActive"`,
+        [data.name, data.slug, data.schemaName]
       );
 
       await client.query('COMMIT');
@@ -64,7 +71,15 @@ export class TenantService {
       // Get from database
       const pool = getDatabasePool();
       const result = await pool.query(
-        'SELECT * FROM tenants WHERE id = $1',
+        `SELECT 
+           id,
+           name,
+           slug,
+           schema_name as "schemaName",
+           created_at as "createdAt",
+           updated_at as "updatedAt",
+           is_active as "isActive"
+         FROM public.tenants WHERE id = $1`,
         [id]
       );
 
@@ -84,18 +99,26 @@ export class TenantService {
     }
   }
 
-  static async getTenantByDomain(domain: string): Promise<Tenant | null> {
+  static async getTenantBySlug(slug: string): Promise<Tenant | null> {
     const pool = getDatabasePool();
     
     try {
       const result = await pool.query(
-        'SELECT * FROM tenants WHERE domain = $1',
-        [domain]
+        `SELECT 
+           id,
+           name,
+           slug,
+           schema_name as "schemaName",
+           created_at as "createdAt",
+           updated_at as "updatedAt",
+           is_active as "isActive"
+         FROM public.tenants WHERE slug = $1`,
+        [slug]
       );
 
       return result.rows.length > 0 ? result.rows[0] : null;
     } catch (error) {
-      logger.error('Failed to get tenant by domain:', error);
+      logger.error('Failed to get tenant by slug:', error);
       throw error;
     }
   }
@@ -109,7 +132,7 @@ export class TenantService {
 
       // Check if tenant exists
       const existingTenant = await client.query(
-        'SELECT * FROM tenants WHERE id = $1',
+        'SELECT * FROM public.tenants WHERE id = $1',
         [id]
       );
 
@@ -128,25 +151,31 @@ export class TenantService {
         paramIndex++;
       }
 
-      if (data.domain !== undefined) {
-        // Check if domain is already taken by another tenant
-        const domainCheck = await client.query(
-          'SELECT id FROM tenants WHERE domain = $1 AND id != $2',
-          [data.domain, id]
+      if (data.slug !== undefined) {
+        // Check if slug is already taken by another tenant
+        const slugCheck = await client.query(
+          'SELECT id FROM public.tenants WHERE slug = $1 AND id != $2',
+          [data.slug, id]
         );
 
-        if (domainCheck.rows.length > 0) {
-          throw new Error('Domain is already taken by another tenant');
+        if (slugCheck.rows.length > 0) {
+          throw new Error('Slug is already taken by another tenant');
         }
 
-        updateFields.push(`domain = $${paramIndex}`);
-        values.push(data.domain);
+        updateFields.push(`slug = $${paramIndex}`);
+        values.push(data.slug);
         paramIndex++;
       }
 
-      if (data.status !== undefined) {
-        updateFields.push(`status = $${paramIndex}`);
-        values.push(data.status);
+      if (data.schemaName !== undefined) {
+        updateFields.push(`schema_name = $${paramIndex}`);
+        values.push(data.schemaName);
+        paramIndex++;
+      }
+
+      if (data.isActive !== undefined) {
+        updateFields.push(`is_active = $${paramIndex}`);
+        values.push(data.isActive);
         paramIndex++;
       }
 
@@ -158,10 +187,17 @@ export class TenantService {
       values.push(id);
 
       const result = await client.query(
-        `UPDATE tenants 
+        `UPDATE public.tenants 
          SET ${updateFields.join(', ')} 
          WHERE id = $${paramIndex} 
-         RETURNING *`,
+         RETURNING 
+           id,
+           name,
+           slug,
+           schema_name as "schemaName",
+           created_at as "createdAt",
+           updated_at as "updatedAt",
+           is_active as "isActive"`,
         values
       );
 
@@ -192,7 +228,7 @@ export class TenantService {
 
       // Check if tenant exists
       const existingTenant = await client.query(
-        'SELECT id FROM tenants WHERE id = $1',
+        'SELECT id FROM public.tenants WHERE id = $1',
         [id]
       );
 
@@ -200,10 +236,10 @@ export class TenantService {
         return false;
       }
 
-      // Soft delete - update status to suspended
+      // Soft delete - set is_active to false
       await client.query(
-        'UPDATE tenants SET status = $1, updated_at = NOW() WHERE id = $2',
-        ['suspended', id]
+        'UPDATE public.tenants SET is_active = false, updated_at = NOW() WHERE id = $1',
+        [id]
       );
 
       await client.query('COMMIT');
@@ -231,16 +267,24 @@ export class TenantService {
 
     try {
       // Get total count
-      const countResult = await pool.query('SELECT COUNT(*) FROM tenants WHERE status != $1', ['suspended']);
+      const countResult = await pool.query('SELECT COUNT(*) FROM public.tenants WHERE is_active = true');
       const total = parseInt(countResult.rows[0].count);
 
       // Get tenants
       const result = await pool.query(
-        `SELECT * FROM tenants 
-         WHERE status != $1 
+        `SELECT 
+           id,
+           name,
+           slug,
+           schema_name as "schemaName",
+           created_at as "createdAt",
+           updated_at as "updatedAt",
+           is_active as "isActive"
+         FROM public.tenants 
+         WHERE is_active = true 
          ORDER BY created_at DESC 
-         LIMIT $2 OFFSET $3`,
-        ['suspended', limit, offset]
+         LIMIT $1 OFFSET $2`,
+        [limit, offset]
       );
 
       return {

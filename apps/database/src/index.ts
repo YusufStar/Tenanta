@@ -1,15 +1,13 @@
+import { initializeDatabase } from './init';
+
 // Database app main exports
 export * from './config/database';
 export * from './config/redis';
 
-// Migration and seeding functions
-export { runMigrations } from './migrations/run-migrations';
-export { runSeeds } from './seeds/run-seeds';
-
 // Database utilities
 export const databaseUtils = {
   async testConnections() {
-    const { testDatabaseConnection, databasePool } = await import('./config/database');
+    const { testDatabaseConnection } = await import('./config/database');
     const { testRedisConnection, databaseApiRedis } = await import('./config/redis');
     
     console.log('🔍 Testing database connections...');
@@ -27,14 +25,11 @@ export const databaseUtils = {
   },
   
   async setupDatabase() {
-    const { runMigrations } = await import('./migrations/run-migrations');
-    const { runSeeds } = await import('./seeds/run-seeds');
     
     console.log('🚀 Setting up database...');
     
     try {
-      await runMigrations();
-      await runSeeds();
+      await initializeDatabase();
       console.log('✅ Database setup completed!');
       return true;
     } catch (error) {

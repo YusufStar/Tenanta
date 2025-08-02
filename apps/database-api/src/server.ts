@@ -11,6 +11,7 @@ import { notFoundHandler } from './middleware/notFoundHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { setupDatabase } from './config/database';
 import { setupRedis } from './config/redis';
+import tenantRoutes from './routes/tenantRoutes';
 export async function createApiServer() {
   const app = express();
 
@@ -45,9 +46,9 @@ export async function createApiServer() {
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // API routes prefix
-  // const apiPrefix = process.env.API_PREFIX || '/api';
-  // const apiVersion = process.env.API_VERSION || 'v1';
-  // const basePath = `${apiPrefix}/${apiVersion}`; // Will be used when routes are added
+  const apiPrefix = process.env.API_PREFIX || '/api';
+  const apiVersion = process.env.API_VERSION || 'v1';
+  const basePath = `${apiPrefix}/${apiVersion}`; // Will be used when routes are added
 
   // Health check endpoint
   app.get('/health', (_req, res) => {
@@ -60,7 +61,7 @@ export async function createApiServer() {
   });
 
   // API routes (to be added later)
-  // app.use(`${basePath}/tenants`, tenantRoutes);
+  app.use(`${basePath}/tenants`, tenantRoutes);
   // app.use(`${basePath}/schemas`, schemaRoutes);
 
   // Error handling middleware

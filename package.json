@@ -8,8 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "cd apps/database-api && npm run dev",
-    "dev:nx": "nx serve database-api",
+    "dev:nx": "nx run-many --target=serve --projects=client,database-api --parallel",
     "build": "nx run-many --target=build --all",
     "test": "nx run-many --target=test --all",
     "lint": "nx run-many --target=lint --all",
@@ -85,5 +84,8 @@
     "*.{json,md}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "@nx/next": "^21.3.11"
   }
 }

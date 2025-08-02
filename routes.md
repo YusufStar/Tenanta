@@ -1,5 +1,6 @@
 ### 📊 **Core Database Operations**
 ```
+GET    /api/v1/tenants              # Tenant bilgilerini getir
 GET    /api/v1/tenants/:id          # Tenant bilgilerini getir
 POST   /api/v1/tenants              # Yeni tenant oluştur
 PUT    /api/v1/tenants/:id          # Tenant güncelle

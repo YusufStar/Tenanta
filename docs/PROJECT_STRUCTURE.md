@@ -8,10 +8,7 @@ This document provides a detailed overview of the Tenanta monorepo structure.
 tenanta/
 ├── apps/                          # Applications
 │   ├── database-api/              # Main API service
-│   ├── client-api/                # Client-specific API
-│   ├── admin-api/                 # Admin panel API
 │   ├── client/                    # User interface (Next.js)
-│   ├── admin/                     # Admin panel (Next.js)
 │   └── database/                  # Database schemas and migrations
 ├── packages/                      # Shared packages
 │   ├── shared/                    # Common utilities and middleware
@@ -65,31 +62,7 @@ database-api/
 └── Dockerfile                     # Container configuration
 ```
 
-### `apps/client-api/`
-**Client-specific API with caching and optimizations**
 
-- **Purpose**: Regional and client-specific API operations
-- **Technologies**: Node.js, Express, TypeScript, Redis
-- **Key Features**:
-  - Caching layer
-  - Rate limiting
-  - Regional optimizations
-  - Client-specific logic
-
-**Structure**:
-```
-client-api/
-├── src/
-│   ├── controllers/               # Request handlers
-│   ├── services/                  # Business logic
-│   ├── middleware/                # Custom middleware
-│   ├── routes/                    # API routes
-│   ├── cache/                     # Caching logic
-│   └── config/                    # Configuration
-├── tests/                         # Unit and integration tests
-├── package.json                   # Dependencies and scripts
-└── Dockerfile                     # Container configuration
-```
 
 
 
@@ -357,7 +330,6 @@ npm run dev
 
 # Run specific application
 nx serve database-api
-nx serve client-api
 nx serve client
 ```
 

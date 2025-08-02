@@ -2,6 +2,7 @@
   "version": "6.0",
   "nxVersion": "17.3.2",
   "deps": {
+    "@nx/next": "^21.3.11",
     "@nrwl/eslint-plugin-nx": "^17.0.0",
     "@nrwl/jest": "^17.0.0",
     "@nrwl/js": "^17.3.2",
@@ -48,87 +49,354 @@
   "fileMap": {
     "nonProjectFiles": [
       {
-        "file": "docs/CONTRIBUTING.md",
-        "hash": "12404562964479950615"
+        "file": "jest.preset.js",
+        "hash": "17428289522824292244"
       },
       {
-        "file": ".prettierrc",
-        "hash": "17975828725053709381"
+        "file": "env.example",
+        "hash": "8561289537065971327"
       },
       {
-        "file": "tsconfig.base.json",
-        "hash": "15139323125739742568"
-      },
-      {
-        "file": "docker-compose.yml",
-        "hash": "1079752612325642535"
+        "file": "package.json",
+        "hash": "997420100406524562"
       },
       {
         "file": ".eslintrc.json",
         "hash": "10288403432871767399"
       },
       {
-        "file": "package.json",
-        "hash": "7539906511875483206"
+        "file": "bun.lock",
+        "hash": "966063055418989280"
       },
       {
-        "file": "bun.lock",
-        "hash": "13084207076709957251"
+        "file": "docker-compose.yml",
+        "hash": "1079752612325642535"
+      },
+      {
+        "file": ".prettierrc",
+        "hash": "17975828725053709381"
+      },
+      {
+        "file": "README.md",
+        "hash": "7948743576577762618"
       },
       {
         "file": ".gitignore",
         "hash": "3591207177908501420"
       },
       {
-        "file": "routes.md",
-        "hash": "15138999439868537415"
-      },
-      {
-        "file": "README.md",
-        "hash": "8499844800834373289"
-      },
-      {
-        "file": "docs/SECURITY.md",
-        "hash": "8090277066265011931"
+        "file": "docs/CHANGELOG.md",
+        "hash": "9801695985889890117"
       },
       {
         "file": "jest.setup.js",
         "hash": "14063721119517560710"
       },
       {
+        "file": "docs/SECURITY.md",
+        "hash": "8090277066265011931"
+      },
+      {
+        "file": "routes.md",
+        "hash": "16942268945241676028"
+      },
+      {
         "file": "package-lock.json",
-        "hash": "17496861341107993272"
+        "hash": "10520432913369659295"
       },
       {
-        "file": "jest.preset.js",
-        "hash": "17428289522824292244"
+        "file": "tsconfig.base.json",
+        "hash": "15139323125739742568"
       },
       {
-        "file": "docs/CHANGELOG.md",
-        "hash": "9801695985889890117"
+        "file": "docs/CONTRIBUTING.md",
+        "hash": "13040309895542375203"
       },
       {
-        "file": "docs/CODE_OF_CONDUCT.md",
-        "hash": "13328106439509284875"
-      },
-      {
-        "file": "env.example",
-        "hash": "12359437513421821962"
-      },
-      {
-        "file": "docs/PROJECT_STRUCTURE.md",
-        "hash": "16354493802324034421"
+        "file": "nx.json",
+        "hash": "15461026159503781243"
       },
       {
         "file": "LICENSE",
         "hash": "17866613121502910594"
       },
       {
-        "file": "nx.json",
-        "hash": "15461026159503781243"
+        "file": "docs/CODE_OF_CONDUCT.md",
+        "hash": "13328106439509284875"
+      },
+      {
+        "file": "docs/PROJECT_STRUCTURE.md",
+        "hash": "2572326329166370400"
       }
     ],
     "projectFileMap": {
+      "client": [
+        {
+          "file": "apps/client/.gitignore",
+          "hash": "1867017717006394117"
+        },
+        {
+          "file": "apps/client/README.md",
+          "hash": "10766794746169900117"
+        },
+        {
+          "file": "apps/client/components.json",
+          "hash": "1259295275652969683"
+        },
+        {
+          "file": "apps/client/env.example",
+          "hash": "3543739803447055092"
+        },
+        {
+          "file": "apps/client/eslint.config.mjs",
+          "hash": "11349616980964601162"
+        },
+        {
+          "file": "apps/client/next.config.ts",
+          "hash": "17157214668998829023"
+        },
+        {
+          "file": "apps/client/package.json",
+          "hash": "17068502165395130975",
+          "deps": [
+            "@tenanta/logging",
+            "@tenanta/shared",
+            "@tenanta/types",
+            "npm:next",
+            "npm:react",
+            "npm:react-dom",
+            "npm:@eslint/eslintrc",
+            "npm:@tailwindcss/postcss",
+            "npm:@types/jest",
+            "npm:@types/node",
+            "npm:eslint",
+            "npm:eslint-config-next",
+            "npm:jest",
+            "npm:tailwindcss",
+            "npm:typescript"
+          ]
+        },
+        {
+          "file": "apps/client/postcss.config.mjs",
+          "hash": "535692822154927684"
+        },
+        {
+          "file": "apps/client/project.json",
+          "hash": "7293414114631738468"
+        },
+        {
+          "file": "apps/client/src/app/favicon.ico",
+          "hash": "9157999678830540297"
+        },
+        {
+          "file": "apps/client/src/app/globals.css",
+          "hash": "16613346069346601751"
+        },
+        {
+          "file": "apps/client/src/app/layout.tsx",
+          "hash": "3768300601413009371"
+        },
+        {
+          "file": "apps/client/src/app/page.tsx",
+          "hash": "3176955187271799772"
+        },
+        {
+          "file": "apps/client/src/components/ui/accordion.tsx",
+          "hash": "14845587631308835637"
+        },
+        {
+          "file": "apps/client/src/components/ui/alert-dialog.tsx",
+          "hash": "8072787343859173829"
+        },
+        {
+          "file": "apps/client/src/components/ui/alert.tsx",
+          "hash": "7480384198647105618"
+        },
+        {
+          "file": "apps/client/src/components/ui/aspect-ratio.tsx",
+          "hash": "15701597510096820978"
+        },
+        {
+          "file": "apps/client/src/components/ui/avatar.tsx",
+          "hash": "14751210977726479928"
+        },
+        {
+          "file": "apps/client/src/components/ui/badge.tsx",
+          "hash": "10963678808027697072"
+        },
+        {
+          "file": "apps/client/src/components/ui/breadcrumb.tsx",
+          "hash": "4542918030053654785"
+        },
+        {
+          "file": "apps/client/src/components/ui/button.tsx",
+          "hash": "10225437513930193679"
+        },
+        {
+          "file": "apps/client/src/components/ui/calendar.tsx",
+          "hash": "6194910191893103211"
+        },
+        {
+          "file": "apps/client/src/components/ui/card.tsx",
+          "hash": "12626163197687957168"
+        },
+        {
+          "file": "apps/client/src/components/ui/carousel.tsx",
+          "hash": "6463183749126440978"
+        },
+        {
+          "file": "apps/client/src/components/ui/chart.tsx",
+          "hash": "14434284085299163233"
+        },
+        {
+          "file": "apps/client/src/components/ui/checkbox.tsx",
+          "hash": "17824499335902137134"
+        },
+        {
+          "file": "apps/client/src/components/ui/collapsible.tsx",
+          "hash": "11042801197673806344"
+        },
+        {
+          "file": "apps/client/src/components/ui/command.tsx",
+          "hash": "13614135110219176049"
+        },
+        {
+          "file": "apps/client/src/components/ui/context-menu.tsx",
+          "hash": "16051270640191030489"
+        },
+        {
+          "file": "apps/client/src/components/ui/dialog.tsx",
+          "hash": "3787619525081248836"
+        },
+        {
+          "file": "apps/client/src/components/ui/drawer.tsx",
+          "hash": "6340250294204870363"
+        },
+        {
+          "file": "apps/client/src/components/ui/dropdown-menu.tsx",
+          "hash": "3901082716450401437"
+        },
+        {
+          "file": "apps/client/src/components/ui/form.tsx",
+          "hash": "3200697611223940984"
+        },
+        {
+          "file": "apps/client/src/components/ui/hover-card.tsx",
+          "hash": "4222917547134356225"
+        },
+        {
+          "file": "apps/client/src/components/ui/input-otp.tsx",
+          "hash": "16041620776518406954"
+        },
+        {
+          "file": "apps/client/src/components/ui/input.tsx",
+          "hash": "5100320126020590845"
+        },
+        {
+          "file": "apps/client/src/components/ui/label.tsx",
+          "hash": "5904204581463370082"
+        },
+        {
+          "file": "apps/client/src/components/ui/menubar.tsx",
+          "hash": "11635968809644900115"
+        },
+        {
+          "file": "apps/client/src/components/ui/navigation-menu.tsx",
+          "hash": "1463801237709690436"
+        },
+        {
+          "file": "apps/client/src/components/ui/pagination.tsx",
+          "hash": "1221162818688540102"
+        },
+        {
+          "file": "apps/client/src/components/ui/popover.tsx",
+          "hash": "2123900949476297986"
+        },
+        {
+          "file": "apps/client/src/components/ui/progress.tsx",
+          "hash": "11845427145659035377"
+        },
+        {
+          "file": "apps/client/src/components/ui/radio-group.tsx",
+          "hash": "9009039500102138258"
+        },
+        {
+          "file": "apps/client/src/components/ui/resizable.tsx",
+          "hash": "16715976187353444410"
+        },
+        {
+          "file": "apps/client/src/components/ui/scroll-area.tsx",
+          "hash": "4331523341645098951"
+        },
+        {
+          "file": "apps/client/src/components/ui/select.tsx",
+          "hash": "9281864355344609472"
+        },
+        {
+          "file": "apps/client/src/components/ui/separator.tsx",
+          "hash": "17968105264491771283"
+        },
+        {
+          "file": "apps/client/src/components/ui/sheet.tsx",
+          "hash": "16878751729248024323"
+        },
+        {
+          "file": "apps/client/src/components/ui/sidebar.tsx",
+          "hash": "8409537637849470092"
+        },
+        {
+          "file": "apps/client/src/components/ui/skeleton.tsx",
+          "hash": "16279548040846261523"
+        },
+        {
+          "file": "apps/client/src/components/ui/slider.tsx",
+          "hash": "14523236345534185617"
+        },
+        {
+          "file": "apps/client/src/components/ui/sonner.tsx",
+          "hash": "17295952987053759355"
+        },
+        {
+          "file": "apps/client/src/components/ui/switch.tsx",
+          "hash": "1593497887276823321"
+        },
+        {
+          "file": "apps/client/src/components/ui/table.tsx",
+          "hash": "9236219364163009886"
+        },
+        {
+          "file": "apps/client/src/components/ui/tabs.tsx",
+          "hash": "10177421167616315890"
+        },
+        {
+          "file": "apps/client/src/components/ui/textarea.tsx",
+          "hash": "3895507706129911610"
+        },
+        {
+          "file": "apps/client/src/components/ui/toggle-group.tsx",
+          "hash": "15943558637507000692"
+        },
+        {
+          "file": "apps/client/src/components/ui/toggle.tsx",
+          "hash": "8693739005475279689"
+        },
+        {
+          "file": "apps/client/src/components/ui/tooltip.tsx",
+          "hash": "11101211651442867546"
+        },
+        {
+          "file": "apps/client/src/hooks/use-mobile.ts",
+          "hash": "14900138732519213047"
+        },
+        {
+          "file": "apps/client/src/lib/utils.ts",
+          "hash": "6483145186850064023"
+        },
+        {
+          "file": "apps/client/tsconfig.json",
+          "hash": "4965826641429490352"
+        }
+      ],
       "@tenanta/types": [
         {
           "file": "packages/types/package.json",
@@ -141,177 +409,11 @@
         },
         {
           "file": "packages/types/src/index.ts",
-          "hash": "15952327698755949901"
+          "hash": "3244421341483603138"
         },
         {
           "file": "packages/types/tsconfig.json",
           "hash": "15430686827053927512"
-        }
-      ],
-      "@tenanta/database": [
-        {
-          "file": "apps/database/env.example",
-          "hash": "5778017982659288731"
-        },
-        {
-          "file": "apps/database/package.json",
-          "hash": "3886135327960193733",
-          "deps": [
-            "npm:pg",
-            "npm:ioredis",
-            "npm:dotenv",
-            "npm:winston",
-            "npm:@types/pg",
-            "npm:@types/node",
-            "npm:typescript",
-            "npm:ts-node",
-            "npm:jest",
-            "npm:@types/jest",
-            "npm:eslint",
-            "npm:prettier"
-          ]
-        },
-        {
-          "file": "apps/database/redis/redis.conf",
-          "hash": "15907824987864694938"
-        },
-        {
-          "file": "apps/database/redis/users.acl",
-          "hash": "4477999872918592936"
-        },
-        {
-          "file": "apps/database/src/config/database.ts",
-          "hash": "5843488430071210617"
-        },
-        {
-          "file": "apps/database/src/config/redis.ts",
-          "hash": "5175144221828743616"
-        },
-        {
-          "file": "apps/database/src/index.ts",
-          "hash": "3572836079722608698"
-        },
-        {
-          "file": "apps/database/src/migrations/run-migrations.ts",
-          "hash": "5119559154212893792"
-        },
-        {
-          "file": "apps/database/src/schemas/init.sql",
-          "hash": "17534653606121902900"
-        },
-        {
-          "file": "apps/database/src/seeds/run-seeds.ts",
-          "hash": "15795051495558716209"
-        },
-        {
-          "file": "apps/database/tsconfig.json",
-          "hash": "18053262506701940579"
-        }
-      ],
-      "database-api": [
-        {
-          "file": "apps/database-api/env.example",
-          "hash": "1899680794143987586"
-        },
-        {
-          "file": "apps/database-api/package.json",
-          "hash": "2738294330647003793",
-          "deps": [
-            "npm:express",
-            "npm:cors",
-            "npm:helmet",
-            "npm:morgan",
-            "npm:dotenv",
-            "npm:pg",
-            "npm:redis",
-            "npm:jsonwebtoken",
-            "npm:bcryptjs",
-            "npm:express-rate-limit",
-            "npm:express-validator",
-            "npm:ws",
-            "npm:compression",
-            "npm:express-winston",
-            "npm:winston",
-            "@tenanta/shared",
-            "@tenanta/types",
-            "@tenanta/logging",
-            "npm:@types/express",
-            "npm:@types/cors",
-            "npm:@types/morgan",
-            "npm:@types/pg",
-            "npm:@types/jsonwebtoken",
-            "npm:@types/bcryptjs",
-            "npm:@types/ws",
-            "npm:@types/compression",
-            "npm:@types/node",
-            "npm:tsx",
-            "npm:typescript",
-            "npm:jest",
-            "npm:@types/jest",
-            "npm:eslint",
-            "npm:@typescript-eslint/eslint-plugin",
-            "npm:@typescript-eslint/parser"
-          ]
-        },
-        {
-          "file": "apps/database-api/project.json",
-          "hash": "326634688614999906"
-        },
-        {
-          "file": "apps/database-api/src/config/database.ts",
-          "hash": "10353605400056634671"
-        },
-        {
-          "file": "apps/database-api/src/config/redis.ts",
-          "hash": "9228397430986567836"
-        },
-        {
-          "file": "apps/database-api/src/index.ts",
-          "hash": "8563666669894972913"
-        },
-        {
-          "file": "apps/database-api/src/middleware/errorHandler.ts",
-          "hash": "5362068512757452607"
-        },
-        {
-          "file": "apps/database-api/src/middleware/notFoundHandler.ts",
-          "hash": "3333236666369264139"
-        },
-        {
-          "file": "apps/database-api/src/middleware/requestLogger.ts",
-          "hash": "13931189433862959840"
-        },
-        {
-          "file": "apps/database-api/src/server.ts",
-          "hash": "17522348735687526167"
-        },
-        {
-          "file": "apps/database-api/src/services/schemaService.ts",
-          "hash": "17908475887606918351"
-        },
-        {
-          "file": "apps/database-api/src/services/tenantService.ts",
-          "hash": "18280432967948749152"
-        },
-        {
-          "file": "apps/database-api/src/types/index.ts",
-          "hash": "7900580638998467207"
-        },
-        {
-          "file": "apps/database-api/src/utils/response.ts",
-          "hash": "3876149295233809803"
-        },
-        {
-          "file": "apps/database-api/src/utils/validation.ts",
-          "hash": "5887952868915031375"
-        },
-        {
-          "file": "apps/database-api/src/websocket/index.ts",
-          "hash": "14070061432291317407"
-        },
-        {
-          "file": "apps/database-api/tsconfig.json",
-          "hash": "2348138267133752414"
         }
       ],
       "@tenanta/shared": [
@@ -372,48 +474,27 @@
           "hash": "15430686827053927512"
         }
       ],
-      "@tenanta/client": [
+      "database-api": [
         {
-          "file": "apps/client/env.example",
-          "hash": "7719978287441583366"
+          "file": "apps/database-api/env.example",
+          "hash": "1899680794143987586"
         },
         {
-          "file": "apps/client/package.json",
-          "hash": "6120953758520573789",
-          "deps": [
-            "npm:next",
-            "npm:react",
-            "npm:react-dom",
-            "@tenanta/shared",
-            "@tenanta/types",
-            "npm:@types/node",
-            "npm:@types/react",
-            "npm:@types/react-dom",
-            "npm:typescript",
-            "npm:eslint",
-            "npm:eslint-config-next",
-            "npm:jest",
-            "npm:@types/jest"
-          ]
-        }
-      ],
-      "@tenanta/client-api": [
-        {
-          "file": "apps/client-api/env.example",
-          "hash": "5771845588651497143"
-        },
-        {
-          "file": "apps/client-api/package.json",
-          "hash": "11512953663963144804",
+          "file": "apps/database-api/package.json",
+          "hash": "2738294330647003793",
           "deps": [
             "npm:express",
             "npm:cors",
             "npm:helmet",
             "npm:morgan",
             "npm:dotenv",
+            "npm:pg",
             "npm:redis",
+            "npm:jsonwebtoken",
+            "npm:bcryptjs",
             "npm:express-rate-limit",
             "npm:express-validator",
+            "npm:ws",
             "npm:compression",
             "npm:express-winston",
             "npm:winston",
@@ -423,6 +504,10 @@
             "npm:@types/express",
             "npm:@types/cors",
             "npm:@types/morgan",
+            "npm:@types/pg",
+            "npm:@types/jsonwebtoken",
+            "npm:@types/bcryptjs",
+            "npm:@types/ws",
             "npm:@types/compression",
             "npm:@types/node",
             "npm:tsx",
@@ -433,6 +518,131 @@
             "npm:@typescript-eslint/eslint-plugin",
             "npm:@typescript-eslint/parser"
           ]
+        },
+        {
+          "file": "apps/database-api/project.json",
+          "hash": "326634688614999906"
+        },
+        {
+          "file": "apps/database-api/src/config/database.ts",
+          "hash": "10353605400056634671"
+        },
+        {
+          "file": "apps/database-api/src/config/redis.ts",
+          "hash": "9228397430986567836"
+        },
+        {
+          "file": "apps/database-api/src/controllers/tenantController.ts",
+          "hash": "10261123201309119050"
+        },
+        {
+          "file": "apps/database-api/src/index.ts",
+          "hash": "8563666669894972913"
+        },
+        {
+          "file": "apps/database-api/src/middleware/errorHandler.ts",
+          "hash": "5362068512757452607"
+        },
+        {
+          "file": "apps/database-api/src/middleware/notFoundHandler.ts",
+          "hash": "3333236666369264139"
+        },
+        {
+          "file": "apps/database-api/src/middleware/requestLogger.ts",
+          "hash": "13931189433862959840"
+        },
+        {
+          "file": "apps/database-api/src/middleware/validation.ts",
+          "hash": "12767974722179001297"
+        },
+        {
+          "file": "apps/database-api/src/routes/tenantRoutes.ts",
+          "hash": "7535115759178869403"
+        },
+        {
+          "file": "apps/database-api/src/server.ts",
+          "hash": "14822279490980927358"
+        },
+        {
+          "file": "apps/database-api/src/services/tenantService.ts",
+          "hash": "1876342460588313345"
+        },
+        {
+          "file": "apps/database-api/src/types/index.ts",
+          "hash": "17239399039435587745"
+        },
+        {
+          "file": "apps/database-api/src/utils/response.ts",
+          "hash": "14208148297955683409"
+        },
+        {
+          "file": "apps/database-api/src/utils/validation.ts",
+          "hash": "5887952868915031375"
+        },
+        {
+          "file": "apps/database-api/src/websocket/index.ts",
+          "hash": "14070061432291317407"
+        },
+        {
+          "file": "apps/database-api/tsconfig.json",
+          "hash": "2348138267133752414"
+        }
+      ],
+      "database": [
+        {
+          "file": "apps/database/env.example",
+          "hash": "5778017982659288731"
+        },
+        {
+          "file": "apps/database/package.json",
+          "hash": "6197192482707740559",
+          "deps": [
+            "npm:pg",
+            "npm:ioredis",
+            "npm:dotenv",
+            "npm:winston",
+            "@tenanta/logging",
+            "npm:@types/pg",
+            "npm:@types/node",
+            "npm:typescript",
+            "npm:ts-node",
+            "npm:jest",
+            "npm:@types/jest",
+            "npm:eslint",
+            "npm:prettier"
+          ]
+        },
+        {
+          "file": "apps/database/project.json",
+          "hash": "12302599746490859252"
+        },
+        {
+          "file": "apps/database/redis/redis.conf",
+          "hash": "15907824987864694938"
+        },
+        {
+          "file": "apps/database/redis/users.acl",
+          "hash": "12559688941452097436"
+        },
+        {
+          "file": "apps/database/src/config/database.ts",
+          "hash": "5843488430071210617"
+        },
+        {
+          "file": "apps/database/src/config/redis.ts",
+          "hash": "10713606740762395460"
+        },
+        {
+          "file": "apps/database/src/index.ts",
+          "hash": "8159660144006002905"
+        },
+        {
+          "file": "apps/database/src/init/index.ts",
+          "hash": "5220050375587998718"
+        },
+        {
+          "file": "apps/database/tsconfig.json",
+          "hash": "18053262506701940579"
         }
       ]
     }
