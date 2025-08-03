@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api, handleApiResponse, handleApiError } from '@/lib/api';
 
 export interface LogEntry {
   id: string;
@@ -29,6 +30,101 @@ interface UseLogsOptions {
   refreshInterval?: number;
 }
 
+// API functions
+const fetchSystemLogs = async (options: {
+  limit: number;
+  offset: number;
+  level?: string;
+  tenantId?: string;
+}): Promise<{ logs: LogEntry[] }> => {
+  try {
+    const params = new URLSearchParams({
+      limit: options.limit.toString(),
+      offset: options.offset.toString(),
+      ...(options.level && { level: options.level }),
+      ...(options.tenantId && { tenantId: options.tenantId })
+    });
+
+    const response = await api.get(`/logs/system?${params}`);
+    const data = handleApiResponse<{ logs: LogEntry[] }>(response);
+    
+    return { logs: data.logs || [] };
+  } catch (error: any) {
+    throw handleApiError(error);
+  }
+};
+
+const fetchApplicationLogs = async (options: {
+  limit: number;
+  offset: number;
+  level?: string;
+}): Promise<{ logs: LogEntry[] }> => {
+  try {
+    const params = new URLSearchParams({
+      limit: options.limit.toString(),
+      offset: options.offset.toString(),
+      ...(options.level && { level: options.level })
+    });
+
+    const response = await api.get(`/logs/application?${params}`);
+    const data = handleApiResponse<{ logs: LogEntry[] }>(response);
+    
+    return { logs: data.logs || [] };
+  } catch (error: any) {
+    throw handleApiError(error);
+  }
+};
+
+const fetchPerformanceMetrics = async (options: {
+  tenantId?: string;
+  limit: number;
+  metricName?: string;
+}): Promise<{ metrics: PerformanceMetric[] }> => {
+  try {
+    const params = new URLSearchParams({
+      limit: options.limit.toString(),
+      ...(options.tenantId && { tenantId: options.tenantId }),
+      ...(options.metricName && { metricName: options.metricName })
+    });
+
+    const response = await api.get(`/logs/metrics?${params}`);
+    const data = handleApiResponse<{ metrics: PerformanceMetric[] }>(response);
+    
+    return { metrics: data.metrics || [] };
+  } catch (error: any) {
+    throw handleApiError(error);
+  }
+};
+
+const fetchLogStats = async (options: { tenantId?: string }): Promise<{
+  stats: {
+    total: number;
+    byLevel: Record<string, number>;
+    recentActivity: number;
+  };
+}> => {
+  try {
+    const params = new URLSearchParams();
+    if (options.tenantId) {
+      params.append('tenantId', options.tenantId);
+    }
+
+    const response = await api.get(`/logs/stats?${params}`);
+    const data = handleApiResponse<{
+      stats: {
+        total: number;
+        byLevel: Record<string, number>;
+        recentActivity: number;
+      };
+    }>(response);
+    
+    return { stats: data.stats };
+  } catch (error: any) {
+    throw handleApiError(error);
+  }
+};
+
+// React Query hooks
 export function useSystemLogs(options: UseLogsOptions = {}) {
   const {
     limit = 100,
@@ -39,58 +135,13 @@ export function useSystemLogs(options: UseLogsOptions = {}) {
     refreshInterval = 5000
   } = options;
 
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchLogs = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const params = new URLSearchParams({
-        limit: limit.toString(),
-        offset: offset.toString(),
-        ...(level && { level }),
-        ...(tenantId && { tenantId })
-      });
-
-      const response = await fetch(`/api/v1/logs/system?${params}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch logs: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.success && data.data) {
-        setLogs(data.data.logs || []);
-      } else {
-        throw new Error(data.message || 'Failed to fetch logs');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      console.error('Error fetching system logs:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLogs();
-
-    if (autoRefresh) {
-      const interval = setInterval(fetchLogs, refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [limit, offset, level, tenantId, autoRefresh, refreshInterval]);
-
-  return {
-    logs,
-    loading,
-    error,
-    refetch: fetchLogs
-  };
+  return useQuery({
+    queryKey: ['system-logs', limit, offset, level, tenantId],
+    queryFn: () => fetchSystemLogs({ limit, offset, level, tenantId }),
+    refetchInterval: autoRefresh ? refreshInterval : false,
+    staleTime: 10000, // Consider data fresh for 10 seconds
+    gcTime: 2 * 60 * 1000, // Keep in cache for 2 minutes
+  });
 }
 
 export function useApplicationLogs(options: UseLogsOptions = {}) {
@@ -102,57 +153,13 @@ export function useApplicationLogs(options: UseLogsOptions = {}) {
     refreshInterval = 5000
   } = options;
 
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchLogs = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const params = new URLSearchParams({
-        limit: limit.toString(),
-        offset: offset.toString(),
-        ...(level && { level })
-      });
-
-      const response = await fetch(`/api/v1/logs/application?${params}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch logs: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.success && data.data) {
-        setLogs(data.data.logs || []);
-      } else {
-        throw new Error(data.message || 'Failed to fetch logs');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      console.error('Error fetching application logs:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLogs();
-
-    if (autoRefresh) {
-      const interval = setInterval(fetchLogs, refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [limit, offset, level, autoRefresh, refreshInterval]);
-
-  return {
-    logs,
-    loading,
-    error,
-    refetch: fetchLogs
-  };
+  return useQuery({
+    queryKey: ['application-logs', limit, offset, level],
+    queryFn: () => fetchApplicationLogs({ limit, offset, level }),
+    refetchInterval: autoRefresh ? refreshInterval : false,
+    staleTime: 10000, // Consider data fresh for 10 seconds
+    gcTime: 2 * 60 * 1000, // Keep in cache for 2 minutes
+  });
 }
 
 export function usePerformanceMetrics(options: {
@@ -170,108 +177,22 @@ export function usePerformanceMetrics(options: {
     refreshInterval = 10000
   } = options;
 
-  const [metrics, setMetrics] = useState<PerformanceMetric[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchMetrics = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const params = new URLSearchParams({
-        limit: limit.toString(),
-        ...(tenantId && { tenantId }),
-        ...(metricName && { metricName })
-      });
-
-      const response = await fetch(`/api/v1/logs/metrics?${params}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch metrics: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.success && data.data) {
-        setMetrics(data.data.metrics || []);
-      } else {
-        throw new Error(data.message || 'Failed to fetch metrics');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      console.error('Error fetching performance metrics:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchMetrics();
-
-    if (autoRefresh) {
-      const interval = setInterval(fetchMetrics, refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [tenantId, limit, metricName, autoRefresh, refreshInterval]);
-
-  return {
-    metrics,
-    loading,
-    error,
-    refetch: fetchMetrics
-  };
+  return useQuery({
+    queryKey: ['performance-metrics', tenantId, limit, metricName],
+    queryFn: () => fetchPerformanceMetrics({ tenantId, limit, metricName }),
+    refetchInterval: autoRefresh ? refreshInterval : false,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+  });
 }
 
 export function useLogStats(options: { tenantId?: string } = {}) {
   const { tenantId } = options;
-  const [stats, setStats] = useState<{
-    total: number;
-    byLevel: Record<string, number>;
-    recentActivity: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchStats = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const params = new URLSearchParams();
-      if (tenantId) {
-        params.append('tenantId', tenantId);
-      }
-
-      const response = await fetch(`/api/v1/logs/stats?${params}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch log stats: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.success && data.data) {
-        setStats(data.data.stats);
-      } else {
-        throw new Error(data.message || 'Failed to fetch log stats');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      console.error('Error fetching log stats:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-  }, [tenantId]);
-
-  return {
-    stats,
-    loading,
-    error,
-    refetch: fetchStats
-  };
+  return useQuery({
+    queryKey: ['log-stats', tenantId],
+    queryFn: () => fetchLogStats({ tenantId }),
+    staleTime: 60000, // Consider data fresh for 1 minute
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+  });
 } 

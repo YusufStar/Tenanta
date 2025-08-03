@@ -25,7 +25,7 @@ export function LogMonitorCard({
   refreshInterval = 5000,
   limit = 100 
 }: LogMonitorCardProps) {
-  const { logs, loading, error, refetch } = useSystemLogs({
+  const { data, isLoading, error, refetch } = useSystemLogs({
     limit,
     autoRefresh,
     refreshInterval
@@ -42,7 +42,7 @@ export function LogMonitorCard({
         viewport.scrollTop = viewport.scrollHeight;
       }
     }
-  }, [logs, scrollAreaRef]);
+  }, [data?.logs, scrollAreaRef]);
 
   const getLogLevelColor = (level: LogEntry['level']) => {
     switch (level) {
@@ -84,6 +84,12 @@ export function LogMonitorCard({
     });
   };
 
+  const handleRefresh = () => {
+    refetch();
+  };
+
+  const logs = data?.logs || [];
+
   return (
     <Card className="flex flex-col h-full min-h-0">
       <CardHeader className="pb-3">
@@ -95,11 +101,11 @@ export function LogMonitorCard({
           <Button
             variant="ghost"
             size="sm"
-            onClick={refetch}
-            disabled={loading}
+            onClick={handleRefresh}
+            disabled={isLoading}
             className="h-8 w-8 p-0"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
         <CardDescription className="text-xs">
@@ -113,9 +119,9 @@ export function LogMonitorCard({
             <div className="p-4 space-y-1 font-mono text-sm">
               {error ? (
                 <div className="text-red-400 text-center py-4">
-                  Error loading logs: {error}
+                  Error loading logs: {error.message}
                 </div>
-              ) : loading && logs.length === 0 ? (
+              ) : isLoading && logs.length === 0 ? (
                 <div className="text-gray-400 text-center py-4">
                   Loading logs...
                 </div>
@@ -124,7 +130,7 @@ export function LogMonitorCard({
                   No logs available
                 </div>
               ) : (
-                logs.map((log) => (
+                logs.map((log: LogEntry) => (
                   <div key={log.id} className="flex items-start space-x-2">
                     <span className="text-gray-500 text-xs flex-shrink-0">
                       {formatTimestamp(log.timestamp)}

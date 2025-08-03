@@ -115,43 +115,6 @@ export class TenantController {
   };
 
   /**
-   * GET /api/v1/tenants/:id/connection-test
-   * Test tenant database and Redis connections
-   */
-  public testTenantConnection = async (
-    req: Request<{ id: string }>,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    try {
-      const { id } = req.params;
-
-      logger.info(`Testing connections for tenant ID: ${id}`);
-
-      const result = await this.tenantService.testTenantConnection(id);
-
-      const response = createSuccessResponse(result, `Connection test completed for tenant "${result.tenant.name}"`);
-      res.status(200).json(response);
-    } catch (error) {
-      logger.error(`Error testing connections for tenant ID: ${req.params.id}:`, error);
-      
-      // Log system log for error
-      await LogService.createSystemLog({
-        level: 'error',
-        message: `Error testing connections for tenant ID: ${req.params.id}`,
-        source: 'TenantController',
-        metadata: { 
-          tenantId: req.params.id, 
-          operation: 'testTenantConnection',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }
-      });
-
-      next(error);
-    }
-  };
-
-  /**
    * POST /api/v1/tenants
    * Create a new tenant
    */

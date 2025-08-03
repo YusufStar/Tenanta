@@ -37,18 +37,19 @@ export function TenantDeleteDialog({
   onOpenChange, 
   onSuccess 
 }: TenantDeleteDialogProps) {
-  const { deleteTenant, loading, error, reset } = useDeleteTenant();
+  const { mutate: deleteTenant, isPending, error, reset } = useDeleteTenant();
 
-  const handleDelete = async () => {
-    try {
-      await deleteTenant(tenant.id);
-      onOpenChange(false);
-      reset();
-      onSuccess?.();
-    } catch (error) {
-      // Error is handled by the hook
-      console.error('Failed to delete tenant:', error);
-    }
+  const handleDelete = () => {
+    deleteTenant(tenant.id, {
+      onSuccess: () => {
+        onOpenChange(false);
+        reset();
+        onSuccess?.();
+      },
+      onError: (error) => {
+        console.error('Failed to delete tenant:', error);
+      }
+    });
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -79,18 +80,18 @@ export function TenantDeleteDialog({
 
         {error && (
           <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{error.message}</AlertDescription>
           </Alert>
         )}
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
-            disabled={loading}
+            disabled={isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <Trash2 className="mr-2 h-4 w-4" />
             Delete Tenant
           </AlertDialogAction>

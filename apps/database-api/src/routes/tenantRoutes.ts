@@ -14,9 +14,6 @@ router.post('/', validateCreateTenant, tenantController.createTenant);
 // GET /api/v1/tenants/:id - Get tenant by ID
 router.get('/:id', validateUUID, tenantController.getTenantById);
 
-// GET /api/v1/tenants/:id/connection-test - Test tenant database and Redis connections
-router.get('/:id/connection-test', validateUUID, tenantController.testTenantConnection);
-
 // DELETE /api/v1/tenants/:id - Delete tenant by ID
 router.delete('/:id', validateUUID, tenantController.deleteTenant);
 

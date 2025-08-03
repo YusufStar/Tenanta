@@ -32,7 +32,7 @@ export function TenantCreateModal({ onSuccess, trigger }: TenantCreateModalProps
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { createTenant, loading, error, reset } = useCreateTenant();
+  const { mutate: createTenant, isPending, error, reset } = useCreateTenant();
 
   // Auto-generate slug and schema name when name changes
   useEffect(() => {
@@ -98,17 +98,18 @@ export function TenantCreateModal({ onSuccess, trigger }: TenantCreateModalProps
       return;
     }
 
-    try {
-      await createTenant(formData);
-      setOpen(false);
-      reset();
-      setFormData({ name: '', slug: '', schemaName: '' });
-      setErrors({});
-      onSuccess?.();
-    } catch (error) {
-      // Error is handled by the hook
-      console.error('Failed to create tenant:', error);
-    }
+    createTenant(formData, {
+      onSuccess: () => {
+        setOpen(false);
+        reset();
+        setFormData({ name: '', slug: '', schemaName: '' });
+        setErrors({});
+        onSuccess?.();
+      },
+      onError: (error) => {
+        console.error('Failed to create tenant:', error);
+      }
+    });
   };
 
   const handleInputChange = (field: keyof CreateTenantRequest, value: string) => {
@@ -156,7 +157,7 @@ export function TenantCreateModal({ onSuccess, trigger }: TenantCreateModalProps
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder="Enter tenant name"
-              disabled={loading}
+              disabled={isPending}
             />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name}</p>
@@ -171,7 +172,7 @@ export function TenantCreateModal({ onSuccess, trigger }: TenantCreateModalProps
               value={formData.slug}
               onChange={(e) => handleInputChange('slug', e.target.value)}
               placeholder="tenant-slug"
-              disabled={loading}
+              disabled={isPending}
             />
             <p className="text-xs text-muted-foreground">
               Auto-generated from name. You can edit if needed.
@@ -189,7 +190,7 @@ export function TenantCreateModal({ onSuccess, trigger }: TenantCreateModalProps
               value={formData.schemaName}
               onChange={(e) => handleInputChange('schemaName', e.target.value)}
               placeholder="tenant_schema"
-              disabled={loading}
+              disabled={isPending}
             />
             <p className="text-xs text-muted-foreground">
               Auto-generated from name. You can edit if needed.
@@ -202,7 +203,7 @@ export function TenantCreateModal({ onSuccess, trigger }: TenantCreateModalProps
           {/* Error Alert */}
           {error && (
             <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{error.message}</AlertDescription>
             </Alert>
           )}
 
@@ -211,12 +212,12 @@ export function TenantCreateModal({ onSuccess, trigger }: TenantCreateModalProps
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
-              disabled={loading}
+              disabled={isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" disabled={isPending}>
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Tenant
             </Button>
           </DialogFooter>

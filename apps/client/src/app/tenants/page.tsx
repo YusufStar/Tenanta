@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 
 export default function TenantsPage() {
-  const { tenants, pagination, loading, error, refetch } = useTenants({
+  const { data, isLoading, error, refetch } = useTenants({
     page: 1,
     limit: 50,
     autoRefresh: true,
@@ -15,15 +15,19 @@ export default function TenantsPage() {
   });
 
   // Transform tenant data to match the table interface
-  const transformedTenants = tenants.map(tenant => ({
+  const transformedTenants = data?.tenants?.map(tenant => ({
     ...tenant,
     createdAt: new Date(tenant.createdAt),
     updatedAt: new Date(tenant.updatedAt)
-  }));
+  })) || [];
 
   const handleCreateSuccess = () => {
     // Refresh the tenants data after successful creation
     refetch();
+  };
+
+  const handleRefresh = async () => {
+    await refetch();
   };
 
   return (
@@ -35,9 +39,9 @@ export default function TenantsPage() {
           <p className="text-muted-foreground">
             Manage and monitor all tenant organizations
           </p>
-          {pagination && (
+          {data?.pagination && (
             <p className="text-sm text-muted-foreground mt-1">
-              {pagination.total} tenant{pagination.total !== 1 ? 's' : ''} total
+              {data.pagination.total} tenant{data.pagination.total !== 1 ? 's' : ''} total
             </p>
           )}
         </div>
@@ -48,13 +52,13 @@ export default function TenantsPage() {
       {error && (
         <Alert variant="destructive" className="mt-4">
           <AlertDescription>
-            Failed to load tenants: {error}
+            Failed to load tenants: {error.message}
           </AlertDescription>
         </Alert>
       )}
       
       {/* Loading State */}
-      {loading && (
+      {isLoading && (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin" />
           <span className="ml-2">Loading tenants...</span>
@@ -62,11 +66,11 @@ export default function TenantsPage() {
       )}
       
       {/* Data Table */}
-      {!loading && !error && (
+      {!isLoading && !error && (
         <TenantsDataTable 
           data={transformedTenants} 
-          onRefresh={refetch}
-          pagination={pagination}
+          onRefresh={handleRefresh}
+          pagination={data?.pagination}
         />
       )}
     </>

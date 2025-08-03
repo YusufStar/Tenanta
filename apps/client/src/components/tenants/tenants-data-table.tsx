@@ -38,7 +38,6 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { TenantDeleteDialog } from './tenant-delete-dialog';
-import { useTenantConnectionTest, TenantConnectionStatus } from '@/hooks/use-tenants';
 
 export interface Tenant {
   id: string;
@@ -61,47 +60,6 @@ interface TenantsDataTableProps {
     hasNext?: boolean;
     hasPrev?: boolean;
   } | null;
-}
-
-// Connection Status Component
-function ConnectionStatus({ tenantId }: { tenantId: string }) {
-  const { connectionStatus, loading, testConnection } = useTenantConnectionTest(tenantId);
-
-  React.useEffect(() => {
-    // Test connection when component mounts
-    testConnection();
-  }, [tenantId]);
-
-  const getStatusIcon = (status: boolean | undefined) => {
-    if (status === undefined) return null;
-    return status ? (
-      <CheckCircle className="h-3 w-3 text-green-500" />
-    ) : (
-      <XCircle className="h-3 w-3 text-red-500" />
-    );
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center gap-1">
-        <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
-        <span className="text-xs text-muted-foreground">Testing...</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-1" title="PostgreSQL Status">
-        <span className="text-xs text-muted-foreground">PG</span>
-        {getStatusIcon(connectionStatus?.postgresql)}
-      </div>
-      <div className="flex items-center gap-1" title="Redis Status">
-        <span className="text-xs text-muted-foreground">RD</span>
-        {getStatusIcon(connectionStatus?.redis)}
-      </div>
-    </div>
-  );
 }
 
 export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTableProps) {
@@ -191,14 +149,6 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
             {isActive ? 'Active' : 'Inactive'}
           </Badge>
         );
-      },
-    },
-    {
-      id: 'connectionStatus',
-      header: 'Connections',
-      cell: ({ row }) => {
-        const tenant = row.original;
-        return <ConnectionStatus tenantId={tenant.id} />;
       },
     },
     {
