@@ -11,15 +11,25 @@ import { notFoundHandler } from './middleware/notFoundHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { setupDatabase } from './config/database';
 import { setupRedis } from './config/redis';
+import { DatabaseService } from './services/databaseService';
 import tenantRoutes from './routes/tenantRoutes';
 import logRoutes from './routes/logRoutes';
-import databaseRoutes from './routes/databaseRoutes';
+
 export async function createApiServer() {
   const app = express();
 
   // Initialize database and Redis connections
   await setupDatabase();
   await setupRedis();
+  
+  // Initialize DatabaseService
+  try {
+    await DatabaseService.initialize();
+    logger.info('✅ DatabaseService initialized successfully');
+  } catch (error) {
+    logger.error('❌ Failed to initialize DatabaseService:', error);
+    throw error;
+  }
 
   // Security middleware
   app.use(helmet());
@@ -65,8 +75,6 @@ export async function createApiServer() {
   // API routes
   app.use(`${basePath}/tenants`, tenantRoutes);
   app.use(`${basePath}/logs`, logRoutes);
-  app.use(`${basePath}/database`, databaseRoutes);
-  // app.use(`${basePath}/schemas`, schemaRoutes);
 
   // Error handling middleware
   app.use(notFoundHandler);

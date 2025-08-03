@@ -4,11 +4,43 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action');
 
+    // Handle connection test
+    if (action === 'connection-test') {
+      const apiUrl = `${API_BASE_URL}/tenants/${id}/connection-test`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              message: 'Tenant not found',
+              error: 'TENANT_NOT_FOUND'
+            },
+            { status: 404 }
+          );
+        }
+        throw new Error(`Database API responded with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return NextResponse.json(data);
+    }
+
+    // Default tenant fetch
     const apiUrl = `${API_BASE_URL}/tenants/${id}`;
     
     const response = await fetch(apiUrl, {

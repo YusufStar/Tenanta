@@ -1,9 +1,8 @@
 'use client';
 
 import { TenantsDataTable } from '@/components/tenants/tenants-data-table';
+import { TenantCreateModal } from '@/components/tenants/tenant-create-modal';
 import { useTenants } from '@/hooks/use-tenants';
-import { Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 
@@ -22,6 +21,11 @@ export default function TenantsPage() {
     updatedAt: new Date(tenant.updatedAt)
   }));
 
+  const handleCreateSuccess = () => {
+    // Refresh the tenants data after successful creation
+    refetch();
+  };
+
   return (
     <>
       {/* Page Header */}
@@ -37,10 +41,7 @@ export default function TenantsPage() {
             </p>
           )}
         </div>
-        <Button variant="outline" size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Tenant
-        </Button> 
+        <TenantCreateModal onSuccess={handleCreateSuccess} />
       </div>
 
       {/* Error State */}

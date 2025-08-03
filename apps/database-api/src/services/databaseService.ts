@@ -35,8 +35,13 @@ export class DatabaseService {
 
   // Get all tables for a specific tenant
   static async getTenantTables(tenantId: string): Promise<TableInfo[]> {
+    let client;
     try {
-      const client = await this.pool.connect();
+      if (!this.pool) {
+        throw new Error('Database pool not initialized');
+      }
+      
+      client = await this.pool.connect();
       
       // Get tenant schema name
       const tenantQuery = 'SELECT schema_name FROM public.tenants WHERE id = $1';
@@ -51,33 +56,42 @@ export class DatabaseService {
       // Get all tables in the tenant's schema
       const tablesQuery = `
         SELECT 
-          table_name as "tableName",
+          relname as "tableName",
           schemaname as "tableSchema",
           n_tup_ins + n_tup_upd + n_tup_del as "rowCount",
-          pg_size_pretty(pg_total_relation_size(schemaname||'.'||table_name)) as "size",
+          pg_size_pretty(pg_total_relation_size(schemaname||'.'||relname)) as "size",
           last_vacuum as "lastModified"
         FROM pg_stat_user_tables 
         WHERE schemaname = $1
-        ORDER BY table_name
+        ORDER BY relname
       `;
       
       const result = await client.query(tablesQuery, [schemaName]);
-      client.release();
       
       return result.rows.map(row => ({
         ...row,
         lastModified: row.lastModified || new Date()
       }));
-    } catch (error) {
-      logger.error('Error getting tenant tables', { tenantId, error: error.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error getting tenant tables', { tenantId, error: errorMessage });
       throw error;
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
   }
 
   // Get table structure (columns)
   static async getTableColumns(tenantId: string, tableName: string): Promise<ColumnInfo[]> {
+    let client;
     try {
-      const client = await this.pool.connect();
+      if (!this.pool) {
+        throw new Error('Database pool not initialized');
+      }
+      
+      client = await this.pool.connect();
       
       // Get tenant schema name
       const tenantQuery = 'SELECT schema_name FROM public.tenants WHERE id = $1';
@@ -103,12 +117,16 @@ export class DatabaseService {
       `;
       
       const result = await client.query(columnsQuery, [schemaName, tableName]);
-      client.release();
       
       return result.rows;
-    } catch (error) {
-      logger.error('Error getting table columns', { tenantId, tableName, error: error.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error getting table columns', { tenantId, tableName, error: errorMessage });
       throw error;
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
   }
 
@@ -121,8 +139,13 @@ export class DatabaseService {
     sortBy?: string,
     sortOrder: 'asc' | 'desc' = 'asc'
   ): Promise<TableData> {
+    let client;
     try {
-      const client = await this.pool.connect();
+      if (!this.pool) {
+        throw new Error('Database pool not initialized');
+      }
+      
+      client = await this.pool.connect();
       
       // Get tenant schema name
       const tenantQuery = 'SELECT schema_name FROM public.tenants WHERE id = $1';
@@ -139,8 +162,21 @@ export class DatabaseService {
       const countResult = await client.query(countQuery);
       const totalCount = parseInt(countResult.rows[0].count);
       
-      // Get columns
-      const columns = await this.getTableColumns(tenantId, tableName);
+      // Get columns directly to avoid multiple connections
+      const columnsQuery = `
+        SELECT 
+          column_name as "columnName",
+          data_type as "dataType",
+          is_nullable as "isNullable",
+          column_default as "columnDefault",
+          character_maximum_length as "characterMaximumLength"
+        FROM information_schema.columns 
+        WHERE table_schema = $1 AND table_name = $2
+        ORDER BY ordinal_position
+      `;
+      
+      const columnsResult = await client.query(columnsQuery, [schemaName, tableName]);
+      const columns = columnsResult.rows;
       
       // Build query with pagination and sorting
       const offset = (page - 1) * limit;
@@ -152,7 +188,6 @@ export class DatabaseService {
       `;
       
       const dataResult = await client.query(dataQuery, [limit, offset]);
-      client.release();
       
       return {
         columns,
@@ -161,15 +196,20 @@ export class DatabaseService {
         page,
         limit
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Error getting table data', { 
         tenantId, 
         tableName, 
         page, 
         limit, 
-        error: error.message 
+        error: errorMessage 
       });
       throw error;
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
   }
 
@@ -181,8 +221,13 @@ export class DatabaseService {
     databaseSize: string;
     uptime: string;
   }> {
+    let client;
     try {
-      const client = await this.pool.connect();
+      if (!this.pool) {
+        throw new Error('Database pool not initialized');
+      }
+      
+      client = await this.pool.connect();
       
       // Get database stats
       const statsQuery = `
@@ -194,7 +239,6 @@ export class DatabaseService {
       `;
       
       const result = await client.query(statsQuery);
-      client.release();
       
       const stats = result.rows[0];
       const activeConnections = parseInt(stats.active_connections);
@@ -218,9 +262,14 @@ export class DatabaseService {
         databaseSize: stats.database_size,
         uptime
       };
-    } catch (error) {
-      logger.error('Error getting database health', { error: error.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error getting database health', { error: errorMessage });
       throw error;
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
   }
 } 

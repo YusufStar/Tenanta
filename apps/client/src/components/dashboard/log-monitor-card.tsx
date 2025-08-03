@@ -1,6 +1,7 @@
 'use client';
 
 import { Terminal, AlertCircle, CheckCircle, Info, RefreshCw } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import {
   Card,
   CardContent,
@@ -29,6 +30,19 @@ export function LogMonitorCard({
     autoRefresh,
     refreshInterval
   });
+
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when logs change
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      // Find the actual scrollable viewport within ScrollArea
+      const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
+    }
+  }, [logs, scrollAreaRef]);
 
   const getLogLevelColor = (level: LogEntry['level']) => {
     switch (level) {
@@ -95,7 +109,7 @@ export function LogMonitorCard({
       </CardHeader>
       <CardContent className="pt-0 flex-1 min-h-0">
         <div className="bg-black rounded-lg border border-gray-800 h-full min-h-0">
-          <ScrollArea className="h-full">
+          <ScrollArea className="h-full" ref={scrollAreaRef}>
             <div className="p-4 space-y-1 font-mono text-sm">
               {error ? (
                 <div className="text-red-400 text-center py-4">

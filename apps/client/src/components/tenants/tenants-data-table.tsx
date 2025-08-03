@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useState } from 'react';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -13,7 +14,7 @@ import {
   useReactTable,
   VisibilityState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, RefreshCw } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, RefreshCw, Trash2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -36,6 +37,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { TenantDeleteDialog } from './tenant-delete-dialog';
+import { useTenantConnectionTest, TenantConnectionStatus } from '@/hooks/use-tenants';
 
 export interface Tenant {
   id: string;
@@ -46,120 +49,6 @@ export interface Tenant {
   updatedAt: Date;
   isActive: boolean;
 }
-
-const columns: ColumnDef<Tenant>[] = [
-  {
-    id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: 'name',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
-  },
-  {
-    accessorKey: 'slug',
-    header: 'Slug',
-    cell: ({ row }) => <div className="font-mono text-sm">{row.getValue('slug')}</div>,
-  },
-  {
-    accessorKey: 'schemaName',
-    header: 'Schema',
-    cell: ({ row }) => <div className="font-mono text-sm">{row.getValue('schemaName')}</div>,
-  },
-  {
-    accessorKey: 'isActive',
-    header: 'Status',
-    cell: ({ row }) => {
-      const isActive = row.getValue('isActive') as boolean;
-      return (
-        <Badge variant={isActive ? 'default' : 'secondary'}>
-          {isActive ? 'Active' : 'Inactive'}
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: 'createdAt',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Created
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const date = new Date(row.getValue('createdAt'));
-      return <div className="text-sm">{date.toLocaleDateString()}</div>;
-    },
-  },
-  {
-    id: 'actions',
-    enableHiding: false,
-    cell: ({ row }) => {
-      const tenant = row.original;
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(tenant.id)}
-            >
-              Copy tenant ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View details</DropdownMenuItem>
-            <DropdownMenuItem>Edit tenant</DropdownMenuItem>
-            <DropdownMenuItem>Manage schema</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">
-              Delete tenant
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
-];
 
 interface TenantsDataTableProps {
   data: Tenant[];
@@ -174,12 +63,55 @@ interface TenantsDataTableProps {
   } | null;
 }
 
+// Connection Status Component
+function ConnectionStatus({ tenantId }: { tenantId: string }) {
+  const { connectionStatus, loading, testConnection } = useTenantConnectionTest(tenantId);
+
+  React.useEffect(() => {
+    // Test connection when component mounts
+    testConnection();
+  }, [tenantId]);
+
+  const getStatusIcon = (status: boolean | undefined) => {
+    if (status === undefined) return null;
+    return status ? (
+      <CheckCircle className="h-3 w-3 text-green-500" />
+    ) : (
+      <XCircle className="h-3 w-3 text-red-500" />
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-1">
+        <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+        <span className="text-xs text-muted-foreground">Testing...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1" title="PostgreSQL Status">
+        <span className="text-xs text-muted-foreground">PG</span>
+        {getStatusIcon(connectionStatus?.postgresql)}
+      </div>
+      <div className="flex items-center gap-1" title="Redis Status">
+        <span className="text-xs text-muted-foreground">RD</span>
+        {getStatusIcon(connectionStatus?.redis)}
+      </div>
+    </div>
+  );
+}
+
 export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedTenantForDelete, setSelectedTenantForDelete] = useState<Tenant | null>(null);
 
   const handleRefresh = async () => {
     if (onRefresh) {
@@ -191,6 +123,139 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
       }
     }
   };
+
+  const handleDeleteClick = (tenant: Tenant) => {
+    setSelectedTenantForDelete(tenant);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteSuccess = () => {
+    handleRefresh();
+  };
+
+  const columns: ColumnDef<Tenant>[] = [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: 'name',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
+    },
+    {
+      accessorKey: 'slug',
+      header: 'Slug',
+      cell: ({ row }) => <div className="font-mono text-sm">{row.getValue('slug')}</div>,
+    },
+    {
+      accessorKey: 'schemaName',
+      header: 'Schema',
+      cell: ({ row }) => <div className="font-mono text-sm">{row.getValue('schemaName')}</div>,
+    },
+    {
+      accessorKey: 'isActive',
+      header: 'Status',
+      cell: ({ row }) => {
+        const isActive = row.getValue('isActive') as boolean;
+        return (
+          <Badge variant={isActive ? 'default' : 'secondary'}>
+            {isActive ? 'Active' : 'Inactive'}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: 'connectionStatus',
+      header: 'Connections',
+      cell: ({ row }) => {
+        const tenant = row.original;
+        return <ConnectionStatus tenantId={tenant.id} />;
+      },
+    },
+    {
+      accessorKey: 'createdAt',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Created
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const date = new Date(row.getValue('createdAt'));
+        return <div className="text-sm">{date.toLocaleDateString()}</div>;
+      },
+    },
+    {
+      id: 'actions',
+      enableHiding: false,
+      cell: ({ row }) => {
+        const tenant = row.original;
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => navigator.clipboard.writeText(tenant.id)}
+              >
+                Copy tenant ID
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Manage schema</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="text-red-600"
+                onClick={() => handleDeleteClick(tenant)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete tenant
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
 
   const table = useReactTable({
     data,
@@ -344,6 +409,16 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
           </Button>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {selectedTenantForDelete && (
+        <TenantDeleteDialog
+          tenant={selectedTenantForDelete}
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onSuccess={handleDeleteSuccess}
+        />
+      )}
     </div>
   );
 } 

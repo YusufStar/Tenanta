@@ -33,6 +33,12 @@ export interface PaginatedTenantsResponse {
   };
 }
 
+export interface TenantConnectionStatus {
+  postgresql: boolean;
+  redis: boolean;
+  tenant: Tenant;
+}
+
 interface UseTenantsOptions {
   page?: number;
   limit?: number;
@@ -79,7 +85,6 @@ export function useTenants(options: UseTenantsOptions = {}) {
       const data = await response.json();
       
       if (data.success && data.data) {
-        // API'den gelen data.data direkt array, tenants property'si yok
         setTenants(Array.isArray(data.data) ? data.data : []);
         setPagination(data.pagination || null);
       } else {
@@ -161,6 +166,49 @@ export function useTenantById(tenantId: string) {
     loading,
     error,
     refetch: fetchTenant
+  };
+}
+
+export function useTenantConnectionTest(tenantId: string) {
+  const [connectionStatus, setConnectionStatus] = useState<TenantConnectionStatus | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const testConnection = async () => {
+    if (!tenantId) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/v1/tenants/${tenantId}?action=connection-test`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to test connection: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        setConnectionStatus(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to test connection');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error testing connection:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    connectionStatus,
+    loading,
+    error,
+    testConnection
   };
 }
 
