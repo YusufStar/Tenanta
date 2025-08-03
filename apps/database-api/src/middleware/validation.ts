@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { createErrorResponse } from '../utils/response';
-import { PaginationQuery } from '../types';
+import { PaginationQuery, CreateTenantRequest } from '../types';
 
 /**
  * Validate pagination query parameters
@@ -67,6 +67,97 @@ export const validateUUID = (
        'Invalid ID format',
        'INVALID_ID_FORMAT'
      );
+    res.status(400).json(errorResponse);
+    return;
+  }
+
+  next();
+};
+
+/**
+ * Validate create tenant request
+ */
+export const validateCreateTenant = (
+  req: Request<{}, {}, CreateTenantRequest>,
+  res: Response,
+  next: NextFunction
+): void => {
+  const { name, slug, schemaName } = req.body;
+
+  // Validate required fields
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    const errorResponse = createErrorResponse(
+      'Name is required and must be a non-empty string',
+      'INVALID_NAME'
+    );
+    res.status(400).json(errorResponse);
+    return;
+  }
+
+  if (!slug || typeof slug !== 'string' || slug.trim().length === 0) {
+    const errorResponse = createErrorResponse(
+      'Slug is required and must be a non-empty string',
+      'INVALID_SLUG'
+    );
+    res.status(400).json(errorResponse);
+    return;
+  }
+
+  if (!schemaName || typeof schemaName !== 'string' || schemaName.trim().length === 0) {
+    const errorResponse = createErrorResponse(
+      'Schema name is required and must be a non-empty string',
+      'INVALID_SCHEMA_NAME'
+    );
+    res.status(400).json(errorResponse);
+    return;
+  }
+
+  // Validate slug format (alphanumeric and hyphens only)
+  const slugRegex = /^[a-z0-9-]+$/;
+  if (!slugRegex.test(slug)) {
+    const errorResponse = createErrorResponse(
+      'Slug must contain only lowercase letters, numbers, and hyphens',
+      'INVALID_SLUG_FORMAT'
+    );
+    res.status(400).json(errorResponse);
+    return;
+  }
+
+  // Validate schema name format (alphanumeric and underscores only)
+  const schemaNameRegex = /^[a-z0-9_]+$/;
+  if (!schemaNameRegex.test(schemaName)) {
+    const errorResponse = createErrorResponse(
+      'Schema name must contain only lowercase letters, numbers, and underscores',
+      'INVALID_SCHEMA_NAME_FORMAT'
+    );
+    res.status(400).json(errorResponse);
+    return;
+  }
+
+  // Validate length constraints
+  if (name.length > 255) {
+    const errorResponse = createErrorResponse(
+      'Name must be 255 characters or less',
+      'NAME_TOO_LONG'
+    );
+    res.status(400).json(errorResponse);
+    return;
+  }
+
+  if (slug.length > 100) {
+    const errorResponse = createErrorResponse(
+      'Slug must be 100 characters or less',
+      'SLUG_TOO_LONG'
+    );
+    res.status(400).json(errorResponse);
+    return;
+  }
+
+  if (schemaName.length > 63) {
+    const errorResponse = createErrorResponse(
+      'Schema name must be 63 characters or less',
+      'SCHEMA_NAME_TOO_LONG'
+    );
     res.status(400).json(errorResponse);
     return;
   }
