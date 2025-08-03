@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { TenantService } from '../services/tenantService';
+import { LogService } from '../services/logService';
 import { createSuccessResponse, createErrorResponse, createPaginatedResponse } from '../utils/response';
 import { logger } from '@tenanta/logging';
 import { PaginationQuery } from '../types';
@@ -62,6 +63,14 @@ export class TenantController {
       const tenant = await this.tenantService.getTenantById(id);
 
       if (!tenant) {
+        // Log system log for tenant not found
+        await LogService.createSystemLog({
+          level: 'warning',
+          message: `Tenant not found with ID: ${id}`,
+          source: 'TenantController',
+          metadata: { tenantId: id, operation: 'getTenantById' }
+        });
+
         const errorResponse = createErrorResponse(
           'Tenant not found',
           'TENANT_NOT_FOUND'
@@ -70,10 +79,37 @@ export class TenantController {
         return;
       }
 
+      // Log system log for successful tenant retrieval
+      await LogService.createSystemLog({
+        tenantId: tenant.id,
+        level: 'info',
+        message: `Tenant retrieved successfully: ${tenant.name} (${tenant.slug})`,
+        source: 'TenantController',
+        metadata: { 
+          tenantId: tenant.id, 
+          tenantName: tenant.name,
+          tenantSlug: tenant.slug,
+          operation: 'getTenantById'
+        }
+      });
+
       const response = createSuccessResponse(tenant, 'Tenant retrieved successfully');
       res.status(200).json(response);
     } catch (error) {
       logger.error('Error getting tenant by ID:', error);
+      
+      // Log system log for error
+      await LogService.createSystemLog({
+        level: 'error',
+        message: `Error retrieving tenant with ID: ${req.params.id}`,
+        source: 'TenantController',
+        metadata: { 
+          tenantId: req.params.id, 
+          operation: 'getTenantById',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      });
+
       next(error);
     }
   };

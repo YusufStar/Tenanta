@@ -13,7 +13,7 @@ import {
   useReactTable,
   VisibilityState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -163,13 +163,34 @@ const columns: ColumnDef<Tenant>[] = [
 
 interface TenantsDataTableProps {
   data: Tenant[];
+  onRefresh?: () => Promise<void>;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext?: boolean;
+    hasPrev?: boolean;
+  } | null;
 }
 
-export function TenantsDataTable({ data }: TenantsDataTableProps) {
+export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  const handleRefresh = async () => {
+    if (onRefresh) {
+      setIsRefreshing(true);
+      try {
+        await onRefresh();
+      } finally {
+        setIsRefreshing(false);
+      }
+    }
+  };
 
   const table = useReactTable({
     data,
@@ -201,6 +222,20 @@ export function TenantsDataTable({ data }: TenantsDataTableProps) {
           }
           className="max-w-sm"
         />
+        
+        {/* Refresh Button */}
+        {onRefresh && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        )}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
@@ -228,6 +263,7 @@ export function TenantsDataTable({ data }: TenantsDataTableProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -271,17 +307,23 @@ export function TenantsDataTable({ data }: TenantsDataTableProps) {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  No tenants found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
+      
+      <div className="flex items-center justify-between space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{' '}
           {table.getFilteredRowModel().rows.length} row(s) selected.
+          {pagination && (
+            <span className="ml-2">
+              (Showing {pagination.page} of {pagination.totalPages} pages)
+            </span>
+          )}
         </div>
         <div className="space-x-2">
           <Button

@@ -4,13 +4,7 @@
   "description": "Database schemas, migrations, and Redis configurations for Tenanta",
   "main": "src/index.ts",
   "scripts": {
-    "migrate": "ts-node src/migrations/run-migrations.ts",
-    "seed": "ts-node src/seeds/run-seeds.ts",
-    "setup": "npm run migrate && npm run seed",
-    "test": "jest",
-    "lint": "eslint src/**/*.ts",
-    "format": "prettier --write src/**/*.ts",
-    "dev": "ts-node src/index.ts"
+    "init": "ts-node src/init/index.ts"
   },
   "dependencies": {
     "pg": "^8.11.3",

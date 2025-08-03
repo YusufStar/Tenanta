@@ -12,6 +12,7 @@ import { requestLogger } from './middleware/requestLogger';
 import { setupDatabase } from './config/database';
 import { setupRedis } from './config/redis';
 import tenantRoutes from './routes/tenantRoutes';
+import logRoutes from './routes/logRoutes';
 export async function createApiServer() {
   const app = express();
 
@@ -62,6 +63,7 @@ export async function createApiServer() {
 
   // API routes (to be added later)
   app.use(`${basePath}/tenants`, tenantRoutes);
+  app.use(`${basePath}/logs`, logRoutes);
   // app.use(`${basePath}/schemas`, schemaRoutes);
 
   // Error handling middleware

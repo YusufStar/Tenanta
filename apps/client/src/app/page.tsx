@@ -4,7 +4,6 @@ import { LogMonitorCard } from '@/components/dashboard/log-monitor-card';
 import {
   mockDatabaseActivityData,
   mockSystemMetrics,
-  mockLogData,
 } from '@/lib/mock';
 
 export default function Page() {
@@ -18,7 +17,7 @@ export default function Page() {
       
       {/* Bottom Row - 1 Card */}
       <div className="flex-1 min-h-0">
-        <LogMonitorCard logs={mockLogData} />
+        <LogMonitorCard />
       </div>
     </>
   );
