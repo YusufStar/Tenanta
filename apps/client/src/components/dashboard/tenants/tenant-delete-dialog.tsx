@@ -42,12 +42,14 @@ export function TenantDeleteDialog({
   const handleDelete = () => {
     deleteTenant(tenant.id, {
       onSuccess: () => {
-        onOpenChange(false);
-        reset();
         onSuccess?.();
       },
       onError: (error) => {
         console.error('Failed to delete tenant:', error);
+      },
+      onSettled: () => {
+        onOpenChange(false);
+        reset();
       }
     });
   };

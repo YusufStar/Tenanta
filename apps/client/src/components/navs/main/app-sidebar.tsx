@@ -11,14 +11,14 @@ import {
   Settings2,
 } from 'lucide-react';
 
-import { NavMain } from '@/components/nav-main';
+import { NavMain } from '@/components/navs/main/nav-main';
 import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import { ModeToggle } from './ui/mode-toggle';
+import { ModeToggle } from '../../ui/mode-toggle';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -37,31 +37,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: '/tenants',
         icon: Users,
         isActive: pathname === '/tenants',
-      },
-      {
-        title: 'Database',
-        url: '/database',
-        icon: Database,
-        isActive: pathname === '/database',
-      },
-      {
-        title: 'Console',
-        url: '/console',
-        icon: Terminal,
-        isActive: pathname === '/console',
-      },
-      {
-        title: 'Monitoring',
-        url: '/monitoring',
-        icon: Activity,
-        isActive: pathname === '/monitoring',
-      },
-      {
-        title: 'Settings',
-        url: '/settings',
-        icon: Settings2,
-        isActive: pathname === '/settings',
-      },
+      }
     ]
   };
 

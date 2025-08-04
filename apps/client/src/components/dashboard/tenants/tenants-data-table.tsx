@@ -14,7 +14,17 @@ import {
   useReactTable,
   VisibilityState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, RefreshCw, Trash2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import {
+  ArrowUpDown,
+  ChevronDown,
+  MoreHorizontal,
+  Plus,
+  RefreshCw,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Loader2,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -38,6 +48,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { TenantDeleteDialog } from './tenant-delete-dialog';
+import { useRouter } from 'next/navigation';
 
 export interface Tenant {
   id: string;
@@ -62,14 +73,22 @@ interface TenantsDataTableProps {
   } | null;
 }
 
-export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTableProps) {
+export function TenantsDataTable({
+  data,
+  onRefresh,
+  pagination,
+}: TenantsDataTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedTenantForDelete, setSelectedTenantForDelete] = useState<Tenant | null>(null);
+  const [selectedTenantForDelete, setSelectedTenantForDelete] =
+    useState<Tenant | null>(null);
 
   const handleRefresh = async () => {
     if (onRefresh) {
@@ -100,14 +119,14 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && 'indeterminate')
           }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
         />
       ),
       cell: ({ row }) => (
         <Checkbox
           checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          onCheckedChange={value => row.toggleSelected(!!value)}
           aria-label="Select row"
         />
       ),
@@ -127,17 +146,23 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
           </Button>
         );
       },
-      cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue('name')}</div>
+      ),
     },
     {
       accessorKey: 'slug',
       header: 'Slug',
-      cell: ({ row }) => <div className="font-mono text-sm">{row.getValue('slug')}</div>,
+      cell: ({ row }) => (
+        <div className="font-mono text-sm">{row.getValue('slug')}</div>
+      ),
     },
     {
       accessorKey: 'schemaName',
       header: 'Schema',
-      cell: ({ row }) => <div className="font-mono text-sm">{row.getValue('schemaName')}</div>,
+      cell: ({ row }) => (
+        <div className="font-mono text-sm">{row.getValue('schemaName')}</div>
+      ),
     },
     {
       accessorKey: 'isActive',
@@ -173,6 +198,7 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
       id: 'actions',
       enableHiding: false,
       cell: ({ row }) => {
+        const router = useRouter();
         const tenant = row.original;
 
         return (
@@ -191,9 +217,13 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
                 Copy tenant ID
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Manage schema</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => router.push(`/tenants/${tenant.id}`)}
+              >
+                Manage Tenant
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 className="text-red-600"
                 onClick={() => handleDeleteClick(tenant)}
               >
@@ -232,12 +262,12 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
         <Input
           placeholder="Filter tenants..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
+          onChange={event =>
             table.getColumn('name')?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
-        
+
         {/* Refresh Button */}
         {onRefresh && (
           <Button
@@ -246,7 +276,9 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
             onClick={handleRefresh}
             disabled={isRefreshing}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`}
+            />
             Refresh
           </Button>
         )}
@@ -260,16 +292,14 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
           <DropdownMenuContent align="end">
             {table
               .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
+              .filter(column => column.getCanHide())
+              .map(column => {
                 return (
                   <DropdownMenuCheckboxItem
                     key={column.id}
                     className="capitalize"
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
+                    onCheckedChange={value => column.toggleVisibility(!!value)}
                   >
                     {column.id}
                   </DropdownMenuCheckboxItem>
@@ -278,13 +308,13 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
+            {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
+                {headerGroup.headers.map(header => {
                   return (
                     <TableHead key={header.id}>
                       {header.isPlaceholder
@@ -301,12 +331,12 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
+              table.getRowModel().rows.map(row => (
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
                 >
-                  {row.getVisibleCells().map((cell) => (
+                  {row.getVisibleCells().map(cell => (
                     <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
@@ -329,7 +359,7 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
           </TableBody>
         </Table>
       </div>
-      
+
       <div className="flex items-center justify-between space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{' '}
@@ -371,4 +401,4 @@ export function TenantsDataTable({ data, onRefresh, pagination }: TenantsDataTab
       )}
     </div>
   );
-} 
+}

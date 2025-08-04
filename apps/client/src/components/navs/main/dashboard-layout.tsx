@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { AppSidebar } from '@/components/app-sidebar';
+import { AppSidebar } from '@/components/navs/main/app-sidebar';
 import {
   Breadcrumb,
   BreadcrumbItem,

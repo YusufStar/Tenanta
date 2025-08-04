@@ -1,6 +1,6 @@
-import { DatabaseActivityChart } from '@/components/dashboard/database-activity-chart';
-import { SystemHealthCard } from '@/components/dashboard/system-health-card';
-import { LogMonitorCard } from '@/components/dashboard/log-monitor-card';
+import { DatabaseActivityChart } from '@/components/dashboard/main/database-activity-chart';
+import { SystemHealthCard } from '@/components/dashboard/main/system-health-card';
+import { LogMonitorCard } from '@/components/dashboard/main/log-monitor-card';
 import {
   mockDatabaseActivityData,
   mockSystemMetrics,

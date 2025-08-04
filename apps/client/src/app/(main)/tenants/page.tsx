@@ -1,7 +1,7 @@
 'use client';
 
-import { TenantsDataTable } from '@/components/tenants/tenants-data-table';
-import { TenantCreateModal } from '@/components/tenants/tenant-create-modal';
+import { TenantsDataTable } from '@/components/dashboard/tenants/tenants-data-table';
+import { TenantCreateModal } from '@/components/dashboard/tenants/tenant-create-modal';
 import { useTenants } from '@/hooks/use-tenants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
