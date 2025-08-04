@@ -42,39 +42,6 @@ export const validatePagination = (
 };
 
 /**
- * Validate UUID parameter
- */
-export const validateUUID = (paramName: string) => (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
-  const paramValue = req.params[paramName];
-  
-  if (!paramValue) {
-    const errorResponse = createErrorResponse(
-      `${paramName} parameter is required`,
-      'MISSING_PARAMETER'
-    );
-    res.status(400).json(errorResponse);
-    return;
-  }
-  
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  
-  if (!uuidRegex.test(paramValue)) {
-    const errorResponse = createErrorResponse(
-      `Invalid ${paramName} format`,
-      'INVALID_ID_FORMAT'
-    );
-    res.status(400).json(errorResponse);
-    return;
-  }
-
-  next();
-};
-
-/**
  * Validate create tenant request
  */
 export const validateCreateTenant = (

@@ -12,8 +12,10 @@ import { requestLogger } from './middleware/requestLogger';
 import { setupDatabase } from './config/database';
 import { setupRedis } from './config/redis';
 import { DatabaseService } from './services/databaseService';
+
 import tenantRoutes from './routes/tenantRoutes';
 import logRoutes from './routes/logRoutes';
+import schemaRoutes from './routes/schemaRoutes';
 
 export async function createApiServer() {
   const app = express();
@@ -30,7 +32,7 @@ export async function createApiServer() {
     logger.error('❌ Failed to initialize DatabaseService:', error);
     throw error;
   }
-
+  
   // Security middleware
   app.use(helmet());
   app.use(cors({
@@ -74,6 +76,7 @@ export async function createApiServer() {
 
   // API routes
   app.use(`${basePath}/tenants`, tenantRoutes);
+  app.use(`${basePath}/schemas`, schemaRoutes);
   app.use(`${basePath}/logs`, logRoutes);
 
   // Error handling middleware
