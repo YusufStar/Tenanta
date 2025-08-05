@@ -92,21 +92,54 @@ export class SchemaService {
       
       const schemaName = tenantResult.rows[0].schema_name;
 
-      // Get all tables in the tenant's schema
-      const tablesQuery = `
+      // Get all tables in the tenant's schema with their columns
+      const tablesWithColumnsQuery = `
         SELECT 
           t.table_name as "tableName",
           t.table_schema as "tableSchema",
           COALESCE(s.n_tup_ins + s.n_tup_upd + s.n_tup_del, 0) as "rowCount",
           COALESCE(pg_size_pretty(pg_total_relation_size(t.table_schema||'.'||t.table_name)), '0 bytes') as "size",
-          COALESCE(s.last_vacuum, CURRENT_TIMESTAMP) as "lastModified"
+          COALESCE(s.last_vacuum, CURRENT_TIMESTAMP) as "lastModified",
+          json_agg(
+            json_build_object(
+              'title', c.column_name,
+              'type', CASE 
+                WHEN c.data_type = 'character varying' THEN 'varchar'
+                WHEN c.data_type = 'timestamp with time zone' THEN 'timestamptz'
+                WHEN c.data_type = 'timestamp without time zone' THEN 'timestamp'
+                WHEN c.data_type = 'character' THEN 'char'
+                WHEN c.data_type = 'double precision' THEN 'float8'
+                WHEN c.data_type = 'real' THEN 'float4'
+                ELSE c.data_type
+              END,
+              'isNullable', c.is_nullable = 'YES',
+              'isPrimaryKey', COALESCE(pk.is_primary, false),
+              'columnDefault', c.column_default
+            ) ORDER BY c.ordinal_position
+          ) as "columns"
         FROM information_schema.tables t
         LEFT JOIN pg_stat_user_tables s ON s.relname = t.table_name AND s.schemaname = t.table_schema
+        LEFT JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = t.table_schema
+        LEFT JOIN (
+          SELECT 
+            kcu.table_schema,
+            kcu.table_name,
+            kcu.column_name,
+            true as is_primary
+          FROM information_schema.table_constraints tc
+          JOIN information_schema.key_column_usage kcu 
+            ON tc.constraint_name = kcu.constraint_name 
+            AND tc.table_schema = kcu.table_schema
+          WHERE tc.constraint_type = 'PRIMARY KEY'
+        ) pk ON pk.table_schema = c.table_schema 
+            AND pk.table_name = c.table_name 
+            AND pk.column_name = c.column_name
         WHERE t.table_schema = $1 AND t.table_type = 'BASE TABLE'
+        GROUP BY t.table_name, t.table_schema, s.n_tup_ins, s.n_tup_upd, s.n_tup_del, s.last_vacuum
         ORDER BY t.table_name
       `;
       
-      const tablesResult = await client.query(tablesQuery, [schemaName]);
+      const tablesResult = await client.query(tablesWithColumnsQuery, [schemaName]);
       const tables = tablesResult.rows;
 
       // Get foreign key relationships

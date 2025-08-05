@@ -191,7 +191,11 @@ export class TenantService {
           username VARCHAR(100) UNIQUE NOT NULL,
           email VARCHAR(255) UNIQUE NOT NULL,
           password_hash VARCHAR(255) NOT NULL,
+          first_name VARCHAR(100),
+          last_name VARCHAR(100),
           is_active BOOLEAN DEFAULT true,
+          email_verified BOOLEAN DEFAULT false,
+          last_login TIMESTAMP WITH TIME ZONE,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         );
@@ -199,24 +203,60 @@ export class TenantService {
 
       await client.query(createUsersTableSQL);
 
-      // Create indexes
+      // Create sessions table in tenant schema with foreign key to users
+      const createSessionsTableSQL = `
+        CREATE TABLE IF NOT EXISTS ${schemaName}.sessions (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          user_id UUID NOT NULL REFERENCES ${schemaName}.users(id) ON DELETE CASCADE,
+          session_token VARCHAR(255) UNIQUE NOT NULL,
+          device_info JSONB,
+          ip_address INET,
+          user_agent TEXT,
+          is_active BOOLEAN DEFAULT true,
+          expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+          last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+      `;
+
+      await client.query(createSessionsTableSQL);
+
+      // Create indexes for users table
       await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_users_username ON ${schemaName}.users(username)`);
       await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_users_email ON ${schemaName}.users(email)`);
       await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_users_active ON ${schemaName}.users(is_active)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_users_email_verified ON ${schemaName}.users(email_verified)`);
 
-      // Create updated_at trigger for users table
-      const createTriggerSQL = `
+      // Create indexes for sessions table
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_sessions_user_id ON ${schemaName}.sessions(user_id)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_sessions_token ON ${schemaName}.sessions(session_token)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_sessions_active ON ${schemaName}.sessions(is_active)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_sessions_expires ON ${schemaName}.sessions(expires_at)`);
+
+      // Create updated_at triggers for both tables
+      const createUsersTriggerSQL = `
         DROP TRIGGER IF EXISTS update_${schemaName}_users_updated_at ON ${schemaName}.users;
         CREATE TRIGGER update_${schemaName}_users_updated_at 
           BEFORE UPDATE ON ${schemaName}.users
           FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
       `;
 
-      await client.query(createTriggerSQL);
+      const createSessionsTriggerSQL = `
+        DROP TRIGGER IF EXISTS update_${schemaName}_sessions_updated_at ON ${schemaName}.sessions;
+        CREATE TRIGGER update_${schemaName}_sessions_updated_at 
+          BEFORE UPDATE ON ${schemaName}.sessions
+          FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+      `;
 
-      logger.info(`✅ PostgreSQL schema "${schemaName}" created successfully for tenant "${tenantName}"`, {
+      await client.query(createUsersTriggerSQL);
+      await client.query(createSessionsTriggerSQL);
+
+      logger.info(`✅ PostgreSQL schema "${schemaName}" created successfully for tenant "${tenantName}" with users and sessions tables`, {
         schemaName,
         tenantName,
+        tables: ['users', 'sessions'],
+        relationships: ['sessions.user_id -> users.id'],
         operation: 'createTenantSchema'
       });
 

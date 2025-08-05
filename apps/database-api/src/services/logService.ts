@@ -11,6 +11,15 @@ export interface LogEntry {
   metadata?: Record<string, any>;
 }
 
+export interface CreateLogRequest {
+  tenantId?: string;
+  level: 'info' | 'warning' | 'error' | 'success';
+  message: string;
+  source?: string;
+  metadata?: Record<string, any>;
+}
+
+
 export class LogService {
   private static readonly CACHE_TTL = 60; // 1 minute for logs
   private static readonly CACHE_PREFIX = 'logs:';
@@ -79,13 +88,35 @@ export class LogService {
     }
   }
 
+   static async createSystemLog(data: CreateLogRequest): Promise<LogEntry> {
+    const pool = getDatabasePool();
+    
+    try {
+      const result = await pool.query(
+        `INSERT INTO public.system_logs (tenant_id, level, message, source, metadata) 
+         VALUES ($1, $2, $3, $4, $5) 
+         RETURNING 
+           id,
+           timestamp,
+           level,
+           message,
+           source,
+           metadata`,
+        [data.tenantId, data.level, data.message, data.source, JSON.stringify(data.metadata || {})]
+      );
 
-
-
-
-
-
-
+      const logEntry = result.rows[0];
+      
+      // Clear cache
+      await this.clearLogCache();
+      
+      logger.info('System log created', { logId: logEntry.id, level: data.level });
+      return logEntry;
+    } catch (error) {
+      logger.error('Failed to create system log:', error);
+      throw error;
+    }
+  }
 
   private static async clearLogCache(): Promise<void> {
     try {

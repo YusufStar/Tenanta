@@ -79,20 +79,6 @@ export class TenantController {
         return;
       }
 
-      // Log system log for successful tenant retrieval
-      await LogService.createSystemLog({
-        tenantId: tenant.id,
-        level: 'info',
-        message: `Tenant "${tenant.name}" retrieved successfully`,
-        source: 'TenantController',
-        metadata: { 
-          tenantId: tenant.id, 
-          tenantName: tenant.name,
-          tenantSlug: tenant.slug,
-          operation: 'getTenantById'
-        }
-      });
-
       const response = createSuccessResponse(tenant, 'Tenant retrieved successfully');
       res.status(200).json(response);
     } catch (error) {
@@ -214,7 +200,7 @@ export class TenantController {
       // Log system log for successful tenant deletion
       await LogService.createSystemLog({
         level: 'success',
-        message: `Tenant deleted successfully with database and Redis cleanup`,
+        message: `Tenant "${id}" deleted successfully with database and Redis cleanup`,
         source: 'TenantController',
         metadata: { 
           tenantId: id, 
