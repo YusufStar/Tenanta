@@ -1,8 +1,5 @@
-export default async function SchemasPage({
-    params,
-}: {
-    params: Promise<{ id: string }>
-}) {
-    const { id } = await params;
-    return <div>Sql editor for tenant {id}</div>;
+import TenantSchemasViewer from "@/components/dashboard/schemas/viewer";
+
+export default function App() {
+    return <TenantSchemasViewer />;
 }
