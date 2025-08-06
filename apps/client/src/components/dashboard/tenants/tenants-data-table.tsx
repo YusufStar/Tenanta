@@ -170,7 +170,7 @@ export function TenantsDataTable({
       cell: ({ row }) => {
         const isActive = row.getValue('isActive') as boolean;
         return (
-          <Badge variant={isActive ? 'default' : 'secondary'}>
+          <Badge variant="outline">
             {isActive ? 'Active' : 'Inactive'}
           </Badge>
         );

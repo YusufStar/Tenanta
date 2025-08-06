@@ -14,7 +14,10 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@dbml/core": "^3.13.9",
+    "@dbml/parse": "^3.13.9",
     "@hookform/resolvers": "^5.2.1",
+    "@monaco-editor/react": "^4.7.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -55,6 +58,7 @@
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.536.0",
+    "monaco-editor": "^0.52.2",
     "next": "15.4.5",
     "next-themes": "^0.4.6",
     "react": "19.1.0",
@@ -74,6 +78,7 @@
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
     "@types/jest": "^29.5.0",
+    "@types/lodash": "^4.17.20",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
