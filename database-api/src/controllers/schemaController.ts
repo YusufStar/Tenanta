@@ -35,6 +35,45 @@ export class SchemaController {
   };
 
   /**
+   * PUT /api/v1/schemas/:tenantId/update
+   * Update tenant schema definition
+   */
+  public updateTenantSchema = async (
+    req: Request<{ tenantId: string }, {}, { schemaCode: string; name?: string; description?: string }>,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { tenantId } = req.params;
+      const { schemaCode, name = 'Main Schema', description = 'Generated from DBML code' } = req.body;
+      
+      logger.info('Updating tenant schema', { tenantId, schemaName: name });
+
+      const schema = await SchemaService.updateTenantSchema(tenantId, {
+        name,
+        description,
+        definition: { code: schemaCode }
+      });
+
+      logger.info('Tenant schema updated successfully', { 
+        tenantId,
+        schemaId: schema.id,
+        schemaName: schema.name
+      });
+
+      const response = createSuccessResponse(schema, `Schema "${schema.name}" updated successfully`);
+      res.status(200).json(response);
+    } catch (error) {
+      logger.error('Error updating tenant schema:', error);
+      next(error);
+    }
+  };
+
+  /**
+   * GET /api/v1/schemas/:tenantId/dbml
+   * Get the saved DBML schema code for a tenant
+   */
+  /**
    * GET /api/v1/schemas/:tenantId/overview
    * Get schema overview with tables and relationships
    */

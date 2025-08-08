@@ -9,91 +9,127 @@ import {
   parseDBML, 
   type ParsedSchema, 
   type ValidationError, 
-  type ParseResult 
 } from "./schema-converter";
+import { useUpdateTenantSchema } from "@/hooks/use-schemas";
+import { toast } from "sonner";
 
 interface CodeEditorProps {
+  tenantId: string;
   onSchemaChange?: (code: string, isValid: boolean, parsedSchema?: ParsedSchema) => void;
+  onSaveSuccess?: () => void; // New callback for successful API saves
   initialCode: string;
   className?: string;
 }
 
-export default function CodeEditor({ onSchemaChange, initialCode, className = "" }: CodeEditorProps) {
+export default function CodeEditor({ tenantId, onSchemaChange, onSaveSuccess, initialCode, className = "" }: CodeEditorProps) {
+  // Debug logging
+  console.log("CodeEditor - tenantId:", tenantId);
+  
   const [code, setCode] = useState(initialCode);
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [isValid, setIsValid] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSavedCode, setLastSavedCode] = useState(initialCode);
   const editorRef = useRef<any>(null);
 
-  // Sync with initialCode prop changes
-  useEffect(() => {
-    if (initialCode && initialCode !== code) {
-      setCode(initialCode);
+  // Mutation hook for updating schema
+  const updateTenantSchemaMutation = useUpdateTenantSchema();
+
+  // Auto-save function with callback for successful saves
+  const performSave = useCallback(async (codeToSave: string, onSaveSuccess?: () => void) => {
+    if (!codeToSave.trim() || codeToSave === lastSavedCode) return;
+
+    console.log("performSave - tenantId:", tenantId, "codeLength:", codeToSave.length);
+
+    setIsSaving(true);
+    try {
+      const payload = {
+        tenantId,
+        schemaData: {
+          schemaCode: codeToSave,
+          name: "Schema",
+          description: "Updated schema"
+        }
+      };
+      
+      console.log("performSave - payload:", payload);
+      
+      await updateTenantSchemaMutation.mutateAsync(payload);
+
+      setLastSavedCode(codeToSave);
+      setHasUnsavedChanges(false);
+      toast.success("Schema saved successfully");
+      
+      // Trigger success callback if provided
+      if (onSaveSuccess) {
+        onSaveSuccess();
+      }
+    } catch (error) {
+      console.error("Failed to save schema:", error);
+      toast.error("Failed to save schema");
+    } finally {
+      setIsSaving(false);
     }
+  }, [tenantId, lastSavedCode, updateTenantSchemaMutation]);
+
+  // Manual save function
+  const handleSave = useCallback(() => {
+    performSave(code, onSaveSuccess);
+  }, [code, performSave, onSaveSuccess]);
+
+  // Sync with initialCode prop changes - only when prop actually changes
+  useEffect(() => {
+    console.log("CodeEditor useEffect - initialCode changed:", initialCode.length, "characters");
+    setCode(initialCode);
+    setLastSavedCode(initialCode);
+    setHasUnsavedChanges(false);
   }, [initialCode]);
 
-  // Debounced validation and save (1 second delay)
-  const debouncedValidateAndSave = useCallback(
+  // Debounced API save (5 seconds delay) - only for auto-save
+  const debouncedApiSave = useCallback(
     debounce(async (newCode: string) => {
-      setIsValidating(false);
-      
-      // Don't validate or save empty code unless it's intentional
-      if (!newCode.trim()) {
-        setErrors([]);
-        setIsValid(false);
-        if (onSchemaChange) {
-          onSchemaChange(newCode, false);
+      // Only save if code is valid, has changes, and is not empty
+      if (newCode.trim() && newCode !== lastSavedCode) {
+        const result = parseDBML(newCode);
+        if (result.isValid) {
+          await performSave(newCode, onSaveSuccess);
         }
-        return;
       }
-      
-      const result = parseDBML(newCode);
-      setErrors(result.errors);
-      setIsValid(result.isValid);
-      
-      if (result.isValid && onSchemaChange) {
-        setIsSaving(true);
-        try {
-          await onSchemaChange(newCode, true, result.parsedSchema);
-        } catch (error) {
-          console.error('Failed to save schema:', error);
-        } finally {
-          setIsSaving(false);
-        }
-      } else if (onSchemaChange) {
-        onSchemaChange(newCode, false);
-      }
-    }, 1000),
-    [onSchemaChange]
+    }, 5000),
+    [lastSavedCode, performSave, onSaveSuccess]
   );
 
-  // Immediate validation for UI feedback
-  const immediateValidation = useCallback(
-    debounce((newCode: string) => {
-      setIsValidating(true);
-      
-      // Don't show errors for empty code
-      if (!newCode.trim()) {
-        setErrors([]);
-        setIsValid(false);
-        setIsValidating(false);
-        return;
+  // Real-time validation and schema change notification (no delay)
+  const handleRealTimeValidation = useCallback((newCode: string) => {
+    // Track changes immediately
+    setHasUnsavedChanges(newCode !== lastSavedCode);
+    
+    // Don't show errors for empty code
+    if (!newCode.trim()) {
+      setErrors([]);
+      setIsValid(false);
+      if (onSchemaChange) {
+        onSchemaChange(newCode, false);
       }
-      
-      const result = parseDBML(newCode);
-      setErrors(result.errors);
-      setIsValid(result.isValid);
-      
-      // Update editor markers immediately
-      if (editorRef.current) {
-        updateErrorMarkers(result.errors);
-      }
-      
-      setIsValidating(false);
-    }, 300),
-    []
-  );
+      return;
+    }
+    
+    const result = parseDBML(newCode);
+    setErrors(result.errors);
+    setIsValid(result.isValid);
+    
+    // Update editor markers immediately
+    if (editorRef.current) {
+      updateErrorMarkers(result.errors);
+    }
+    
+    // Notify parent component immediately for real-time node/edge updates
+    if (onSchemaChange) {
+      onSchemaChange(newCode, result.isValid, result.parsedSchema);
+    }
+  }, [lastSavedCode, onSchemaChange]);
 
   // Update error markers in Monaco editor
   const updateErrorMarkers = useCallback((validationErrors: ValidationError[]) => {
@@ -116,20 +152,10 @@ export default function CodeEditor({ onSchemaChange, initialCode, className = ""
     }
   }, []);
 
+  // Initial validation when component mounts
   useEffect(() => {
-    // Validate immediately for UI feedback
-    immediateValidation(code);
-    
-    // Schedule save if valid
-    if (isValid) {
-      debouncedValidateAndSave(code);
-    }
-    
-    return () => {
-      debouncedValidateAndSave.cancel();
-      immediateValidation.cancel();
-    };
-  }, [code, isValid, debouncedValidateAndSave, immediateValidation]);
+    handleRealTimeValidation(code);
+  }, []); // Only run once on mount
 
   const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
@@ -301,23 +327,29 @@ export default function CodeEditor({ onSchemaChange, initialCode, className = ""
     // Add keyboard shortcuts
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       if (isValid && !isSaving) {
-        debouncedValidateAndSave.flush();
+        handleSave();
       }
     });
 
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       if (isValid && !isSaving) {
-        debouncedValidateAndSave.flush();
+        handleSave();
       }
     });
 
     // Initial validation
-    immediateValidation(code);
+    handleRealTimeValidation(code);
   };
 
   const handleCodeChange = (value: string | undefined) => {
     const newCode = value || '';
     setCode(newCode);
+    
+    // Trigger real-time validation and schema change notification (immediate)
+    handleRealTimeValidation(newCode);
+    
+    // Trigger debounced API save (5 seconds delay)
+    debouncedApiSave(newCode);
   };
 
   const handleCopy = async () => {
@@ -346,7 +378,7 @@ export default function CodeEditor({ onSchemaChange, initialCode, className = ""
 
   const handleSaveNow = () => {
     if (isValid && !isSaving) {
-      debouncedValidateAndSave.flush();
+      handleSave();
     }
   };
 
@@ -356,6 +388,9 @@ export default function CodeEditor({ onSchemaChange, initialCode, className = ""
       <header className="flex items-center justify-between p-3 border-b border-gray-700 flex-shrink-0">
         <h3 className="text-sm font-medium text-gray-200 flex items-center gap-2">
           Schema Editor
+          {hasUnsavedChanges && !isSaving && (
+            <span className="text-xs text-orange-400">• unsaved</span>
+          )}
           {isSaving ? (
             <Save className="h-3 w-3 text-blue-500 animate-pulse" />
           ) : isValidating ? (
@@ -371,9 +406,17 @@ export default function CodeEditor({ onSchemaChange, initialCode, className = ""
             size="sm"
             variant="ghost"
             onClick={handleSaveNow}
-            disabled={!isValid || isSaving}
+            disabled={!isValid || isSaving || !hasUnsavedChanges}
             className="h-7 px-2 text-gray-400 hover:text-gray-200 disabled:opacity-50"
-            title={isValid ? "Save now (Ctrl+S)" : "Fix errors to save"}
+            title={
+              !isValid 
+                ? "Fix errors to save" 
+                : !hasUnsavedChanges 
+                ? "No changes to save" 
+                : isSaving 
+                ? "Saving..." 
+                : "Save now (Ctrl+S)"
+            }
           >
             <Save className={`h-3 w-3 ${isSaving ? 'animate-pulse' : ''}`} />
           </Button>

@@ -2,6 +2,7 @@ import { getDatabasePool } from '../config/database';
 import { getRedisClient, getTenantRedisClient } from '../config/redis';
 import { logger } from '../shared/logger';
 import { Tenant, CreateTenantRequest, UpdateTenantRequest } from '../types';
+import { DatabaseService } from './databaseService';
 
 export class TenantService {
   private static readonly CACHE_TTL = 300; // 5 minutes
@@ -16,16 +17,13 @@ export class TenantService {
       throw new Error(`Tenant with ID ${tenantId} not found`);
     }
 
-    const pool = getDatabasePool();
-    const client = await pool.connect();
-    
-    // Set search path to tenant schema
-    await client.query(`SET search_path TO ${tenant.schemaName}, public`);
+    // Get client from tenant's own database
+    const client = await DatabaseService.getTenantDatabaseClient(tenantId);
     
     logger.info(`✅ Database client connected for tenant "${tenant.name}"`, {
       tenantId,
       tenantName: tenant.name,
-      schemaName: tenant.schemaName,
+      databaseName: `tenant_${tenantId.replace(/-/g, '_')}`,
       operation: 'getTenantDatabaseClient'
     });
 
@@ -69,7 +67,7 @@ export class TenantService {
     let redisStatus = false;
 
     try {
-      // Test PostgreSQL connection
+      // Test PostgreSQL connection to tenant's own database
       const dbClient = await this.getTenantDatabaseClient(tenantId);
       await dbClient.query('SELECT 1');
       await dbClient.release();
@@ -78,7 +76,7 @@ export class TenantService {
       logger.info(`✅ PostgreSQL connection test successful for tenant "${tenant.name}"`, {
         tenantId,
         tenantName: tenant.name,
-        schemaName: tenant.schemaName
+        databaseName: `tenant_${tenantId.replace(/-/g, '_')}`
       });
     } catch (error) {
       logger.error(`❌ PostgreSQL connection test failed for tenant "${tenant.name}":`, error);
@@ -139,14 +137,16 @@ export class TenantService {
 
       const tenant = result.rows[0];
 
-      // Create PostgreSQL schema for the tenant
-      logger.info(`Creating PostgreSQL schema for tenant: ${tenant.name} (${tenant.slug})`, {
+      // Create separate PostgreSQL database for the tenant
+      logger.info(`Creating PostgreSQL database for tenant: ${tenant.name} (${tenant.slug})`, {
         tenantId: tenant.id,
-        schemaName: tenant.schemaName,
-        operation: 'createTenantSchema'
+        operation: 'createTenantDatabase'
       });
 
-      await this.createTenantSchema(client, tenant.schemaName, tenant.name);
+      await DatabaseService.createTenantDatabase(tenant.id, tenant.name);
+
+      // Create tables in the tenant's own database
+      await this.createTenantTables(tenant.id, tenant.name);
 
       // Create Redis database for the tenant
       logger.info(`Setting up Redis database for tenant: ${tenant.name} (${tenant.slug})`, {
@@ -165,7 +165,7 @@ export class TenantService {
         tenantId: tenant.id,
         tenantName: tenant.name,
         tenantSlug: tenant.slug,
-        schemaName: tenant.schemaName,
+        databaseName: `tenant_${tenant.id.replace(/-/g, '_')}`,
         operation: 'createTenant'
       });
 
@@ -179,14 +179,19 @@ export class TenantService {
     }
   }
 
-  private static async createTenantSchema(client: any, schemaName: string, tenantName: string): Promise<void> {
-    try {
-      // Create schema
-      await client.query(`CREATE SCHEMA IF NOT EXISTS ${schemaName}`);
+  /**
+   * Create tables in tenant's own database
+   */
+  private static async createTenantTables(tenantId: string, tenantName: string): Promise<void> {
+    let tenantClient;
 
-      // Create users table in tenant schema
+    try {
+      // Get client from tenant's own database
+      tenantClient = await DatabaseService.getTenantDatabaseClient(tenantId);
+
+      // Create users table
       const createUsersTableSQL = `
-        CREATE TABLE IF NOT EXISTS ${schemaName}.users (
+        CREATE TABLE IF NOT EXISTS users (
           id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
           username VARCHAR(100) UNIQUE NOT NULL,
           email VARCHAR(255) UNIQUE NOT NULL,
@@ -201,13 +206,13 @@ export class TenantService {
         );
       `;
 
-      await client.query(createUsersTableSQL);
+      await tenantClient.query(createUsersTableSQL);
 
-      // Create sessions table in tenant schema with foreign key to users
+      // Create sessions table with foreign key to users
       const createSessionsTableSQL = `
-        CREATE TABLE IF NOT EXISTS ${schemaName}.sessions (
+        CREATE TABLE IF NOT EXISTS sessions (
           id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          user_id UUID NOT NULL REFERENCES ${schemaName}.users(id) ON DELETE CASCADE,
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           session_token VARCHAR(255) UNIQUE NOT NULL,
           device_info JSONB,
           ip_address INET,
@@ -220,49 +225,54 @@ export class TenantService {
         );
       `;
 
-      await client.query(createSessionsTableSQL);
+      await tenantClient.query(createSessionsTableSQL);
 
       // Create indexes for users table
-      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_users_username ON ${schemaName}.users(username)`);
-      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_users_email ON ${schemaName}.users(email)`);
-      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_users_active ON ${schemaName}.users(is_active)`);
-      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_users_email_verified ON ${schemaName}.users(email_verified)`);
+      await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`);
+      await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
+      await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active)`);
+      await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_users_email_verified ON users(email_verified)`);
 
       // Create indexes for sessions table
-      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_sessions_user_id ON ${schemaName}.sessions(user_id)`);
-      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_sessions_token ON ${schemaName}.sessions(session_token)`);
-      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_sessions_active ON ${schemaName}.sessions(is_active)`);
-      await client.query(`CREATE INDEX IF NOT EXISTS idx_${schemaName}_sessions_expires ON ${schemaName}.sessions(expires_at)`);
+      await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)`);
+      await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(session_token)`);
+      await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_sessions_active ON sessions(is_active)`);
+      await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`);
 
       // Create updated_at triggers for both tables
       const createUsersTriggerSQL = `
-        DROP TRIGGER IF EXISTS update_${schemaName}_users_updated_at ON ${schemaName}.users;
-        CREATE TRIGGER update_${schemaName}_users_updated_at 
-          BEFORE UPDATE ON ${schemaName}.users
+        DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+        CREATE TRIGGER update_users_updated_at 
+          BEFORE UPDATE ON users
           FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
       `;
 
       const createSessionsTriggerSQL = `
-        DROP TRIGGER IF EXISTS update_${schemaName}_sessions_updated_at ON ${schemaName}.sessions;
-        CREATE TRIGGER update_${schemaName}_sessions_updated_at 
-          BEFORE UPDATE ON ${schemaName}.sessions
+        DROP TRIGGER IF EXISTS update_sessions_updated_at ON sessions;
+        CREATE TRIGGER update_sessions_updated_at 
+          BEFORE UPDATE ON sessions
           FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
       `;
 
-      await client.query(createUsersTriggerSQL);
-      await client.query(createSessionsTriggerSQL);
+      await tenantClient.query(createUsersTriggerSQL);
+      await tenantClient.query(createSessionsTriggerSQL);
 
-      logger.info(`✅ PostgreSQL schema "${schemaName}" created successfully for tenant "${tenantName}" with users and sessions tables`, {
-        schemaName,
+      logger.info(`✅ Tables created successfully in tenant database for "${tenantName}"`, {
+        tenantId,
         tenantName,
+        databaseName: `tenant_${tenantId.replace(/-/g, '_')}`,
         tables: ['users', 'sessions'],
         relationships: ['sessions.user_id -> users.id'],
-        operation: 'createTenantSchema'
+        operation: 'createTenantTables'
       });
 
     } catch (error) {
-      logger.error(`❌ Failed to create PostgreSQL schema "${schemaName}" for tenant "${tenantName}":`, error);
+      logger.error(`❌ Failed to create tables in tenant database for "${tenantName}":`, error);
       throw error;
+    } finally {
+      if (tenantClient) {
+        tenantClient.release();
+      }
     }
   }
 
@@ -486,15 +496,14 @@ export class TenantService {
         operation: 'deleteTenant'
       });
 
-      // Delete PostgreSQL schema
-      logger.info(`Deleting PostgreSQL schema "${tenant.schema_name}" for tenant "${tenant.name}"`, {
+      // Delete PostgreSQL database
+      logger.info(`Deleting PostgreSQL database for tenant "${tenant.name}"`, {
         tenantId: id,
         tenantName: tenant.name,
-        schemaName: tenant.schema_name,
-        operation: 'deleteTenantSchema'
+        operation: 'deleteTenantDatabase'
       });
 
-      await this.deleteTenantSchema(client, tenant.schema_name, tenant.name);
+      await DatabaseService.deleteTenantDatabase(id, tenant.name);
 
       // Delete Redis database
       logger.info(`Cleaning up Redis database for tenant "${tenant.name}"`, {
@@ -531,23 +540,6 @@ export class TenantService {
       throw error;
     } finally {
       client.release();
-    }
-  }
-
-  private static async deleteTenantSchema(client: any, schemaName: string, tenantName: string): Promise<void> {
-    try {
-      // Drop the entire schema
-      await client.query(`DROP SCHEMA IF EXISTS ${schemaName} CASCADE`);
-
-      logger.info(`✅ PostgreSQL schema "${schemaName}" deleted successfully for tenant "${tenantName}"`, {
-        schemaName,
-        tenantName,
-        operation: 'deleteTenantSchema'
-      });
-
-    } catch (error) {
-      logger.error(`❌ Failed to delete PostgreSQL schema "${schemaName}" for tenant "${tenantName}":`, error);
-      throw error;
     }
   }
 

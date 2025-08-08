@@ -17,15 +17,26 @@ const nodeTypes = { databaseSchema: DatabaseSchemaNode };
 
 export default function TenantSchemasViewer() {
     const tenantId = useParams().id as string;
+    
+    // Debug logging
+    console.log("TenantSchemasViewer - tenantId:", tenantId);
+    
     const [isDataLoaded, setIsDataLoaded] = useState(false);
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
     const [initialCode, setInitialCode] = useState<string>("");
     const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
+    
+    // Get schema overview for both visualization and editor (now includes DBML parsing)
     const { data: schemaOverview, isLoading, error } = useSchemaOverview(tenantId, { autoRefresh: false });
 
     // Load initial data and convert to nodes/edges and DBML code
     useEffect(() => {
+        console.log("Viewer useEffect triggered:", { 
+            hasSchemaOverview: !!schemaOverview, 
+            isDataLoaded 
+        });
+        
         if (schemaOverview && !isDataLoaded) {
             // Convert API data to ReactFlow nodes
             const reactFlowNodes = schemaOverview.tables.map((table: ApiTable, index: number) => ({
@@ -54,8 +65,15 @@ export default function TenantSchemasViewer() {
                 style: { stroke: '#64748b', strokeWidth: 2 }
             })) as Edge[] || [];
 
-            // Convert API data to DBML code for the editor
-            const dbmlCode = apiSchemaToDBML(schemaOverview.tables, schemaOverview.relationships || []);
+            // Use saved DBML code if available, otherwise generate from API data
+            let dbmlCode = '';
+            if (schemaOverview.savedCode) {
+                dbmlCode = schemaOverview.savedCode;
+                console.log("Using saved DBML code from database:", dbmlCode.length, "characters");
+            } else {
+                dbmlCode = apiSchemaToDBML(schemaOverview.tables, schemaOverview.relationships || []);
+                console.log("Generated DBML code from database structure:", dbmlCode.length, "characters");
+            }
             
             setNodes(reactFlowNodes);
             setEdges(reactFlowEdges);
@@ -68,32 +86,32 @@ export default function TenantSchemasViewer() {
         setNodes((nds) => applyNodeChanges(changes, nds));
     }, []);
 
-    // Handle schema changes from the code editor
+    // Handle schema changes from the code editor (real-time for nodes/edges)
     const handleSchemaChange = useCallback(async (code: string, isValid: boolean, parsedSchema?: ParsedSchema) => {
-        // Update nodes and edges immediately for real-time feedback
+        // Update nodes and edges immediately for real-time feedback (no debounce)
         if (isValid && parsedSchema && parsedSchema.tables.length > 0) {
             const { nodes: newNodes, edges: newEdges } = schemaToNodes(parsedSchema, nodes);
             setNodes(newNodes);
             setEdges(newEdges);
             
-            // Fit view to show all nodes after a short delay to ensure nodes are rendered
-            setTimeout(() => {
-                if (reactFlowInstanceRef.current) {
-                    reactFlowInstanceRef.current.fitView({ padding: 0.2, duration: 800 });
-                }
-            }, 100);
-            
-            // Save to API (with 1 second debounce from the editor)
-            try {
-                console.log('Saving schema to API...');
-            } catch (error) {
-                console.error('Failed to save schema to API:', error);
-            }
+            console.log('Real-time update: nodes and edges updated');
         } else if (!isValid || !parsedSchema || parsedSchema.tables.length === 0) {
             // Don't clear the visualization if code is invalid or empty - keep existing visualization
             console.log('Invalid or empty schema, keeping current visualization');
         }
     }, [nodes]);
+
+    // Handle successful API saves - only then trigger fitView
+    const handleSaveSuccess = useCallback(() => {
+        console.log('API save successful, triggering fitView');
+        
+        // Fit view to show all nodes after a short delay to ensure nodes are rendered
+        setTimeout(() => {
+            if (reactFlowInstanceRef.current) {
+                reactFlowInstanceRef.current.fitView({ padding: 0.2, duration: 800 });
+            }
+        }, 100);
+    }, []);
 
     if (isLoading) {
         return (
@@ -141,7 +159,9 @@ export default function TenantSchemasViewer() {
             <section className="w-[500px] h-full bg-card border-border flex flex-col">
                 {initialCode ? (
                     <CodeEditor 
+                        tenantId={tenantId}
                         onSchemaChange={handleSchemaChange}
+                        onSaveSuccess={handleSaveSuccess}
                         initialCode={initialCode}
                         className="h-full"
                     />

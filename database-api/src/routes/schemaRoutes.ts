@@ -7,6 +7,7 @@ const schemaController = new SchemaController();
 // Schema management routes
 router.get('/:tenantId', schemaController.getTenantSchemas);
 router.post('/:tenantId', schemaController.createSchema);
+router.put('/:tenantId/update', schemaController.updateTenantSchema);
 router.get('/:tenantId/overview', schemaController.getSchemaOverview);
 router.get('/:tenantId/tables/:tableName', schemaController.getTableDetails);
 

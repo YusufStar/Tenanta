@@ -6,16 +6,6 @@ export interface SchemaColumn {
   type: string;
 }
 
-export interface ReactFlowTable {
-  id: string;
-  position: { x: number; y: number };
-  type: string;
-  data: {
-    label: string;
-    schema: SchemaColumn[];
-  };
-}
-
 export interface ReactFlowRelationship {
   id: string;
   source: string;
@@ -70,6 +60,7 @@ export interface SchemaOverview {
   totalTables: number;
   totalRows: number;
   lastModified: string;
+  savedCode?: string; // The saved DBML code if available
 }
 
 export interface Schema {
@@ -188,6 +179,19 @@ const updateSchema = async (schemaId: string, updateData: UpdateSchemaRequest): 
   }
 };
 
+const updateTenantSchema = async (tenantId: string, schemaData: {
+  schemaCode: string;
+  name: string;
+  description: string;
+}): Promise<Schema> => {
+  try {
+    const response = await api.put(`/schemas/${tenantId}/update`, schemaData);
+    return handleApiResponse(response);
+  } catch (error) {
+    throw handleApiError(error);
+  }
+};
+
 const deleteSchema = async (schemaId: string): Promise<boolean> => {
   try {
     const response = await api.delete(`/schemas/schema/${schemaId}`);
@@ -276,6 +280,32 @@ export function useUpdateSchema() {
       // Invalidate schemas list for this tenant
       queryClient.invalidateQueries({ queryKey: ['schemas', updatedSchema.tenantId] });
       queryClient.invalidateQueries({ queryKey: ['schema-overview', updatedSchema.tenantId] });
+    },
+  });
+}
+
+export function useUpdateTenantSchema() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ tenantId, schemaData }: { 
+      tenantId: string; 
+      schemaData: {
+        schemaCode: string;
+        name: string;
+        description: string;
+      }
+    }) => updateTenantSchema(tenantId, schemaData),
+    onSuccess: (updatedSchema, { tenantId }) => {
+      // Update the specific schema in cache
+      if (updatedSchema.id) {
+        queryClient.setQueryData(['schema', updatedSchema.id], updatedSchema);
+      }
+      // Invalidate schemas list and overview for this tenant
+      queryClient.invalidateQueries({ queryKey: ['schemas', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['schema-overview', tenantId] });
+      // Invalidate the schema code cache as well
+      queryClient.invalidateQueries({ queryKey: ['tenant-schema-code', tenantId] });
     },
   });
 }
