@@ -7,7 +7,7 @@ Thank you for your interest in contributing to Tenanta! This document provides g
 - [Code of Conduct](#code-of-conduct)
 - [How Can I Contribute?](#how-can-i-contribute)
 - [Development Setup](#development-setup)
-- [Monorepo Structure](#monorepo-structure)
+- [Project Structure](#project-structure)
 - [Coding Standards](#coding-standards)
 - [Testing Guidelines](#testing-guidelines)
 - [Pull Request Process](#pull-request-process)
@@ -48,6 +48,7 @@ This project and everyone participating in it is governed by our [Code of Conduc
 ### Prerequisites
 
 - Node.js 18+
+- Bun (recommended) or npm
 - Docker and Docker Compose
 - PostgreSQL 14+
 - Redis
@@ -60,70 +61,65 @@ This project and everyone participating in it is governed by our [Code of Conduc
    cd tenanta
    ```
 
-2. **Install dependencies**
+2. **Set up environment variables**
    ```bash
-   npm install
+   # Copy environment files for each service
+   cp database-api/env.example database-api/.env
+   cp client/env.example client/.env
+   cp database/env.example database/.env
+   # Edit .env files with your local configuration
    ```
 
-3. **Set up environment variables**
+3. **Start development services with Docker**
    ```bash
-   cp env.example .env
-   # Edit .env with your local configuration
+   docker-compose up
    ```
 
-4. **Start development services**
+4. **Install dependencies and run individual services**
    ```bash
-   npm run docker:up
+   # Database API
+   cd database-api
+   bun install
+   bun run dev
+
+   # Client
+   cd client
+   bun install
+   bun run dev
+
+   # Database initialization
+   cd database
+   bun install
+   bun run init
    ```
 
-5. **Run database migrations**
-   ```bash
-   npm run migrate
-   ```
-
-6. **Seed development data**
-   ```bash
-   npm run seed:dev
-   ```
-
-7. **Start development servers**
-   ```bash
-   npm run dev
-   ```
-
-## 📁 Monorepo Structure
+## 📁 Project Structure
 
 ```
 tenanta/
-├── apps/                          # Applications
-│   ├── database-api/              # Main API service
-│   ├── client/                    # User interface (Next.js)
-│   └── database/                  # Database schemas and migrations
-├── packages/                      # Shared packages
-│   ├── shared/                    # Common utilities and middleware
-│   ├── database-schema/           # Database schema definitions
-│   ├── auth/                      # Authentication utilities
-│   ├── logging/                   # Centralized logging
-│   └── types/                     # Shared TypeScript types
+├── client/                        # User interface (Next.js)
+├── database-api/                  # Main API service
+├── database/                      # Database schemas and migrations
 ├── docs/                          # Documentation
-├── tests/                         # E2E and integration tests
-└── tools/                         # Build and development tools
+└── docker-compose.yml             # Docker services configuration
 ```
 
-### Application Development
+### Service Development
 
-- **`apps/database-api`** - Main API with authentication webhook handling and core business logic
-- **`apps/client`** - User interface built with Next.js including database console
-- **`apps/database`** - Database schemas, migrations, and seed data
+- **`database-api/`** - Main API with tenant management, schema operations, and core business logic
+- **`client/`** - User interface built with Next.js including dashboard and management tools
+- **`database/`** - Database initialization scripts and Redis configuration
 
-### Shared Packages
+### Service-Specific Guidelines
 
-- **`packages/shared`** - Common utilities, middleware, and helper functions
-- **`packages/database-schema`** - Database schema definitions and migrations
-- **`packages/auth`** - Authentication and authorization utilities
-- **`packages/logging`** - Centralized logging and monitoring
-- **`packages/types`** - Shared TypeScript type definitions
-- **`packages/console`** - Database console utilities and components
+Each service is self-contained with its own:
+- Dependencies and package.json
+- TypeScript configuration
+- Environment variables
+- Logging, validation, and utility functions
+- Type definitions
+
+This architecture provides better service isolation and easier deployment.
 
 ## 📝 Coding Standards
 
@@ -135,14 +131,12 @@ tenanta/
 - Use meaningful variable and function names
 - Keep functions small and focused
 
-### Monorepo Guidelines
+### Service-Specific Guidelines
 
-- **Use shared packages**: Place common code in `packages/shared`
-- **Type safety**: Use `packages/types` for shared type definitions
-- **Database schemas**: Use `packages/database-schema` for schema definitions
-- **Authentication**: Use `packages/auth` for auth-related utilities
-- **Logging**: Use `packages/logging` for centralized logging
-- **Database Console**: Use `packages/console` for console-related utilities
+- **Self-contained services**: Each service should contain its own utilities, types, and helpers
+- **Type safety**: Use TypeScript for all new code and maintain type definitions within each service
+- **Local dependencies**: Avoid cross-service dependencies; duplicate utilities if needed for service isolation
+- **Consistent structure**: Follow the established folder structure within each service
 
 ### JavaScript/TypeScript Standards
 
@@ -192,22 +186,21 @@ tests/
 ### Running Tests
 
 ```bash
-# Run all tests
-npm run test
+# Run tests for database-api
+cd database-api
+bun run test
 
-# Run tests for specific application
-nx test database-api
-nx test admin-api
+# Run tests for client
+cd client
+bun run test
 
 # Run tests with coverage
-nx test database-api --coverage
+cd database-api
+bun run test:coverage
 
-# Run E2E tests
-nx e2e client
-nx e2e admin
-
-# Run affected tests (only changed apps)
-npm run affected:test
+# Run linting
+cd database-api
+bun run lint
 ```
 
 ## 🔄 Pull Request Process
@@ -215,12 +208,12 @@ npm run affected:test
 ### Before Submitting
 
 1. **Ensure your code follows standards**
-   - Run linter: `npm run lint`
-   - Run formatter: `nx format:write`
+   - Run linter: `bun run lint` (in service directory)
+   - Run formatter: `bun run format` (if available)
    - Fix any issues
 
 2. **Test your changes**
-   - Run all tests: `npm run test`
+   - Run service tests: `bun run test`
    - Test manually in development
    - Ensure no breaking changes
 
@@ -241,14 +234,10 @@ Brief description of changes
 - [ ] Breaking change
 - [ ] Documentation update
 
-## Affected Applications
+## Affected Services
 - [ ] database-api
-- [ ] client-api
-- [ ] admin-api
 - [ ] client
-- [ ] admin
-- [ ] shared packages
-- [ ] database console
+- [ ] database
 
 ## Testing
 - [ ] Unit tests added/updated
@@ -261,7 +250,6 @@ Brief description of changes
 - [ ] Tests pass
 - [ ] Documentation updated
 - [ ] No breaking changes
-- [ ] Shared packages updated if needed
 ```
 
 ### Review Process
@@ -305,13 +293,10 @@ A clear description of what you expected to happen.
 - Node.js version: [e.g. 18.0.0]
 - Database version: [e.g. PostgreSQL 14]
 
-**Affected Applications**
+**Affected Services**
 - [ ] database-api
-- [ ] client-api
-- [ ] admin-api
 - [ ] client
-- [ ] admin
-- [ ] database console
+- [ ] database
 
 **Additional context**
 Add any other context about the problem here.
@@ -331,14 +316,10 @@ A clear description of what you want to happen.
 **Describe alternatives you've considered**
 A clear description of any alternative solutions.
 
-**Target Applications**
+**Target Services**
 - [ ] database-api
-- [ ] client-api
-- [ ] admin-api
 - [ ] client
-- [ ] admin
-- [ ] shared packages
-- [ ] database console
+- [ ] database
 
 **Additional context**
 Add any other context or screenshots about the feature request.
@@ -372,7 +353,9 @@ We follow [Semantic Versioning](https://semver.org/):
 
 2. **Update version**
    ```bash
-   npm version patch|minor|major
+   # Update version in package.json of affected services
+   cd database-api
+   bun version patch|minor|major
    ```
 
 3. **Update changelog**

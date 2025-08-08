@@ -13,7 +13,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./apps/database/init:/docker-entrypoint-initdb.d
+      - ./database/init:/docker-entrypoint-initdb.d
     networks:
       - tenanta-network
     healthcheck:
@@ -31,8 +31,8 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-      - ./apps/database/redis/redis.conf:/usr/local/etc/redis/redis.conf
-      - ./apps/database/redis/users.acl:/usr/local/etc/redis/users.acl
+      - ./database/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./database/redis/users.acl:/usr/local/etc/redis/users.acl
     networks:
       - tenanta-network
     healthcheck:

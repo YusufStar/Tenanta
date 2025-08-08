@@ -8,26 +8,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial monorepo structure with Nx
-- Shared packages for common functionality
+- Migration from monorepo to standalone services architecture
+- Self-contained service structure without shared packages
+- Individual TypeScript configurations per service
+- Local logging, validation, and utility implementations per service
 - Docker Compose configuration for all services
 - Comprehensive documentation
 - Security policies and contributing guidelines
-- Web-based database console for PostgreSQL and Redis
 
 ### Changed
-- Migrated from individual repositories to monorepo structure
-- Updated all documentation to reflect monorepo architecture
-- Reorganized project structure for better maintainability
+- **BREAKING**: Removed monorepo structure and Nx workspace
+- **BREAKING**: Removed shared packages (@tenanta/logging, @tenanta/types, @tenanta/shared)
+- **BREAKING**: Each service now contains its own utilities, types, and helpers
+- Migrated from workspace dependencies to standalone service dependencies
+- Updated all import paths to use local modules instead of workspace packages
+- Reorganized project structure for better service isolation
+- Updated TypeScript configurations to remove path aliases and workspace references
 
 ### Fixed
-- N/A
+- Import resolution issues after removing workspace structure
+- TypeScript configuration conflicts
+- Module resolution errors
 
 ### Deprecated
-- N/A
+- Monorepo structure with Nx
+- Shared workspace packages
+- Cross-service dependencies
 
 ### Removed
-- N/A
+- Nx workspace configuration
+- packages/ directory and all shared packages
+- tsconfig.base.json and workspace-level configurations
+- @tenanta/* package imports and dependencies
+- Workspace-level package.json scripts
 
 ### Security
 - N/A
@@ -74,7 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Version History
 
 - **1.0.0** - Initial release with monorepo structure
-- **Unreleased** - Development version with ongoing improvements
+- **Unreleased** - Migration to standalone services architecture
 
 ## Contributing
 

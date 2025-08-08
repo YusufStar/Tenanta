@@ -1,31 +1,21 @@
 # 📁 Project Structure
 
-This document provides a detailed overview of the Tenanta monorepo structure.
+This document provides a detailed overview of the Tenanta project structure.
 
 ## 🏗️ Overview
 
 ```
 tenanta/
-├── apps/                          # Applications
-│   ├── database-api/              # Main API service
-│   ├── client/                    # User interface (Next.js)
-│   └── database/                  # Database schemas and migrations
-├── packages/                      # Shared packages
-│   ├── shared/                    # Common utilities and middleware
-│   ├── database-schema/           # Database schema definitions
-│   ├── auth/                      # Authentication utilities
-│   ├── logging/                   # Centralized logging
-│   └── types/                     # Shared TypeScript types
+├── client/                        # User interface (Next.js)
+├── database-api/                  # Main API service
+├── database/                      # Database schemas and migrations
 ├── docs/                          # Documentation
-├── tests/                         # E2E and integration tests
-├── tools/                         # Build and development tools
-├── nginx/                         # Nginx configuration
-└── scripts/                       # Build and deployment scripts
+└── docker-compose.yml             # Docker services configuration
 ```
 
-## 📦 Applications (`apps/`)
+## 📦 Applications
 
-### `apps/database-api/`
+### `database-api/`
 **Main API service handling core business logic**
 
 - **Purpose**: Central API for all database operations, schema management, and core business logic
@@ -42,335 +32,247 @@ tenanta/
 database-api/
 ├── src/
 │   ├── controllers/               # Request handlers
-│   │   ├── schema/               # Schema management controllers
-│   │   ├── project/              # Project management controllers
-│   │   └── data/                 # Data CRUD controllers
+│   │   ├── tenantController.ts    # Tenant management controllers
+│   │   ├── schemaController.ts    # Schema management controllers
+│   │   └── logController.ts       # Log management controllers
 │   ├── services/                  # Business logic
-│   │   ├── schemaService/        # Schema management services
-│   │   ├── projectService/       # Project management services
-│   │   └── dataService/          # Data manipulation services
+│   │   ├── tenantService.ts       # Tenant management services
+│   │   ├── schemaService.ts       # Schema management services
+│   │   ├── logService.ts          # Log management services
+│   │   └── databaseService.ts     # Database initialization services
 │   ├── middleware/                # Custom middleware
+│   │   ├── errorHandler.ts        # Error handling middleware
+│   │   ├── requestLogger.ts       # Request logging middleware
+│   │   └── validation.ts          # Request validation middleware
 │   ├── routes/                    # API routes
-│   │   ├── schema/               # Schema management routes
-│   │   ├── project/              # Project management routes
-│   │   └── data/                 # Data CRUD routes
-│   ├── models/                    # Data models
+│   │   ├── tenantRoutes.ts        # Tenant management routes
+│   │   ├── schemaRoutes.ts        # Schema management routes
+│   │   └── logRoutes.ts           # Log management routes
+│   ├── config/                    # Configuration
+│   │   ├── database.ts            # Database configuration
+│   │   └── redis.ts               # Redis configuration
+│   ├── shared/                    # Shared utilities
+│   │   ├── logger.ts              # Logging utilities
+│   │   ├── helpers.ts             # Helper functions
+│   │   ├── crypto.ts              # Cryptographic utilities
+│   │   └── validation.ts          # Validation utilities
+│   ├── types/                     # TypeScript type definitions
+│   │   └── index.ts               # All type definitions
 │   ├── utils/                     # Utility functions
-│   └── config/                    # Configuration
-├── tests/                         # Unit and integration tests
+│   │   ├── response.ts            # Response formatting utilities
+│   │   └── validation.ts          # Validation utilities
+│   ├── websocket/                 # WebSocket functionality
+│   │   └── index.ts               # WebSocket server setup
+│   ├── server.ts                  # Express server setup
+│   └── index.ts                   # Application entry point
+├── logs/                          # Application logs
 ├── package.json                   # Dependencies and scripts
-└── Dockerfile                     # Container configuration
+├── tsconfig.json                  # TypeScript configuration
+└── env.example                    # Environment variables template
 ```
 
 
 
 
 
-### `apps/client/`
+### `client/`
 **User interface application**
 
 - **Purpose**: Main user-facing application
-- **Technologies**: Next.js, React, TypeScript
+- **Technologies**: Next.js, React, TypeScript, Tailwind CSS
 - **Key Features**:
   - Multi-tenant database management
   - Dynamic schema creation and management
   - Project-based database organization
   - Real-time updates
   - Schema visualization and editing
-  - Web-based PostgreSQL console
-  - Web-based Redis console
-  - SQL query execution interface
+  - Dashboard and analytics
+  - Modern responsive UI
 
 **Structure**:
 ```
 client/
 ├── src/
+│   ├── app/                       # Next.js app directory structure
+│   │   ├── (main)/               # Main application layout
+│   │   │   ├── layout.tsx         # Main layout component
+│   │   │   ├── page.tsx           # Home page
+│   │   │   └── tenants/           # Tenant management pages
+│   │   ├── (tenant)/             # Tenant-specific routes
+│   │   │   └── tenants/           # Tenant dashboard pages
+│   │   ├── globals.css            # Global styles
+│   │   └── layout.tsx             # Root layout
 │   ├── components/                # React components
-│   │   ├── schema/               # Schema management components
-│   │   ├── database/             # Database management components
-│   │   ├── console/              # Database console components
-│   │   └── common/               # Shared components
-│   ├── pages/                     # Next.js pages
-│   │   ├── projects/             # Project management pages
-│   │   ├── schemas/              # Schema management pages
-│   │   ├── console/              # Database console pages
-│   │   └── dashboard/            # Dashboard pages
+│   │   ├── dashboard/            # Dashboard components
+│   │   │   └── main/             # Main dashboard components
+│   │   ├── chart-examples/       # Chart and visualization components
+│   │   ├── flow/                 # Flow diagram components
+│   │   ├── navs/                 # Navigation components
+│   │   ├── ui/                   # Reusable UI components (shadcn/ui)
+│   │   └── query-provider.tsx    # React Query provider
 │   ├── hooks/                     # Custom React hooks
-│   ├── utils/                     # Utility functions
-│   ├── styles/                    # CSS and styling
-│   └── config/                    # Configuration
+│   │   ├── use-logs.ts           # Logs management hook
+│   │   ├── use-mobile.ts         # Mobile detection hook
+│   │   ├── use-schemas.ts        # Schema management hook
+│   │   └── use-tenants.ts        # Tenant management hook
+│   ├── lib/                       # Utility libraries
+│   │   ├── api.ts                # API client utilities
+│   │   ├── mock.ts               # Mock data for development
+│   │   └── utils.ts              # General utility functions
+│   └── styles/                    # Additional styling
 ├── public/                        # Static assets
-├── tests/                         # Unit and integration tests
 ├── package.json                   # Dependencies and scripts
-└── Dockerfile                     # Container configuration
+├── tsconfig.json                  # TypeScript configuration
+├── next.config.ts                 # Next.js configuration
+├── tailwind.config.js             # Tailwind CSS configuration
+├── components.json                # shadcn/ui configuration
+└── env.example                    # Environment variables template
 ```
 
-
-
-### `apps/database/`
+### `database/`
 **Database schemas and migrations**
 
-- **Purpose**: Database schema management and dynamic schema creation
-- **Technologies**: PostgreSQL, Redis
+- **Purpose**: Database initialization and configuration
+- **Technologies**: PostgreSQL, Redis, TypeScript
 - **Key Features**:
-  - Base schema definitions
-  - Dynamic schema creation and management
-  - Migration scripts
-  - Seed data
-  - Multi-tenant setup
-  - Schema validation and versioning
+  - Database initialization scripts
+  - Redis configuration
+  - Base schema setup
+  - Multi-tenant database preparation
 
 **Structure**:
 ```
 database/
 ├── src/
-│   ├── schemas/                   # Database schemas
-│   │   ├── base/                 # Base schema definitions
-│   │   ├── dynamic/              # Dynamic schema management
-│   │   └── validation/           # Schema validation rules
-│   ├── migrations/                # Migration scripts
-│   ├── seeds/                     # Seed data
-│   ├── config/                    # Database configuration
-│   └── utils/                     # Schema management utilities
+│   └── init/                      # Initialization scripts
+│       └── index.ts               # Database initialization
 ├── redis/                         # Redis configuration
 │   ├── redis.conf                 # Redis server configuration
 │   └── users.acl                  # Redis ACL definitions
-├── init/                          # Initialization scripts
-├── tests/                         # Database tests
+├── init/                          # Docker initialization scripts
 ├── package.json                   # Dependencies and scripts
-└── Dockerfile                     # Container configuration
-```
-
-## 📚 Shared Packages (`packages/`)
-
-### `packages/shared/`
-**Common utilities and middleware**
-
-- **Purpose**: Shared code across all applications
-- **Technologies**: TypeScript, Express
-- **Key Features**:
-  - Middleware (CORS, Helmet, etc.)
-  - Utility functions
-  - Common types
-  - Constants
-
-**Structure**:
-```
-shared/
-├── src/
-│   ├── middleware/                # Express middleware
-│   ├── utils/                     # Utility functions
-│   ├── types/                     # TypeScript types
-│   ├── constants/                 # Constants
-│   └── index.ts                   # Main export file
-├── tests/                         # Unit tests
-├── package.json                   # Dependencies and scripts
-└── tsconfig.json                  # TypeScript configuration
-```
-
-### `packages/database-schema/`
-**Database schema definitions**
-
-- **Purpose**: Shared database schema definitions
-- **Technologies**: TypeScript, Prisma/TypeORM
-- **Key Features**:
-  - Entity definitions
-  - Schema types
-  - Migration helpers
-
-**Structure**:
-```
-database-schema/
-├── src/
-│   ├── entities/                  # Database entities
-│   ├── migrations/                # Migration helpers
-│   ├── types/                     # Schema types
-│   └── index.ts                   # Main export file
-├── tests/                         # Unit tests
-├── package.json                   # Dependencies and scripts
-└── tsconfig.json                  # TypeScript configuration
-```
-
-### `packages/auth/`
-**Authentication utilities**
-
-- **Purpose**: Shared authentication logic
-- **Technologies**: TypeScript, JWT
-- **Key Features**:
-  - JWT utilities
-  - Authentication middleware
-  - Role-based access control
-
-**Structure**:
-```
-auth/
-├── src/
-│   ├── middleware/                # Auth middleware
-│   ├── utils/                     # Auth utilities
-│   ├── types/                     # Auth types
-│   └── index.ts                   # Main export file
-├── tests/                         # Unit tests
-├── package.json                   # Dependencies and scripts
-└── tsconfig.json                  # TypeScript configuration
-```
-
-### `packages/logging/`
-**Centralized logging**
-
-- **Purpose**: Shared logging functionality
-- **Technologies**: TypeScript, Winston
-- **Key Features**:
-  - Logging utilities
-  - Log formatting
-  - Log transport
-
-**Structure**:
-```
-logging/
-├── src/
-│   ├── transports/                # Log transports
-│   ├── formatters/                # Log formatters
-│   ├── utils/                     # Logging utilities
-│   └── index.ts                   # Main export file
-├── tests/                         # Unit tests
-├── package.json                   # Dependencies and scripts
-└── tsconfig.json                  # TypeScript configuration
-```
-
-### `packages/types/`
-**Shared TypeScript types**
-
-- **Purpose**: Common type definitions
-- **Technologies**: TypeScript
-- **Key Features**:
-  - API types
-  - Database types
-  - Common interfaces
-
-**Structure**:
-```
-types/
-├── src/
-│   ├── api/                       # API types
-│   ├── database/                  # Database types
-│   ├── common/                    # Common types
-│   └── index.ts                   # Main export file
-├── tests/                         # Type tests
-├── package.json                   # Dependencies and scripts
-└── tsconfig.json                  # TypeScript configuration
+├── tsconfig.json                  # TypeScript configuration
+└── env.example                    # Environment variables template
 ```
 
 ## 📖 Documentation (`docs/`)
 
 ```
 docs/
-├── api/                           # API documentation
-│   ├── database-api.md            # Database API docs
-│   ├── client-api.md              # Client API docs
-│   └── admin-api.md               # Admin API docs
-├── deployment/                    # Deployment guides
-├── development/                   # Development guides
-└── architecture/                  # Architecture documentation
-```
-
-## 🧪 Tests (`tests/`)
-
-```
-tests/
-├── unit/                          # Unit tests
-├── integration/                   # Integration tests
-├── e2e/                          # End-to-end tests
-└── fixtures/                      # Test data
-```
-
-## 🛠️ Tools (`tools/`)
-
-```
-tools/
-├── scripts/                       # Build scripts
-├── configs/                       # Configuration files
-└── generators/                    # Code generators
+├── PROJECT_STRUCTURE.md          # This file - project structure overview
+├── CHANGELOG.md                   # Version history and changes
+├── CONTRIBUTING.md                # Contribution guidelines
+├── CODE_OF_CONDUCT.md            # Code of conduct
+└── SECURITY.md                    # Security policies and procedures
 ```
 
 ## 🔧 Configuration Files
 
 ### Root Level
-- `package.json` - Workspace configuration
-- `nx.json` - Nx workspace configuration
-- `tsconfig.base.json` - Base TypeScript configuration
-- `.eslintrc.json` - ESLint configuration
-- `.prettierrc` - Prettier configuration
-- `jest.preset.js` - Jest configuration
-- `docker-compose.yml` - Docker services
+- `docker-compose.yml` - Docker services configuration
 - `env.example` - Environment variables template
+- `LICENSE` - Project license
 
 ### Application Level
 Each application has its own:
 - `package.json` - Dependencies and scripts
 - `tsconfig.json` - TypeScript configuration
-- `Dockerfile` - Container configuration
-- `README.md` - Application-specific documentation
+- `env.example` - Environment variables template
 
 ## 🚀 Development Workflow
 
-### Adding New Applications
-```bash
-nx generate @nrwl/js:application my-new-app
-```
-
-### Adding New Packages
-```bash
-nx generate @nrwl/js:library my-new-package
-```
-
 ### Running Applications
-```bash
-# Run all applications
-npm run dev
 
-# Run specific application
-nx serve database-api
-nx serve client
+```bash
+# Run the entire stack with Docker
+docker-compose up
+
+# Run database-api in development mode
+cd database-api
+bun install
+bun run dev
+
+# Run client in development mode
+cd client
+bun install
+bun run dev
+
+# Run database initialization
+cd database
+bun install
+bun run init
 ```
 
 ### Building Applications
-```bash
-# Build all applications
-npm run build
 
-# Build specific application
-nx build database-api
+```bash
+# Build database-api
+cd database-api
+bun run build
+
+# Build client
+cd client
+bun run build
 ```
 
 ### Testing Applications
-```bash
-# Test all applications
-npm run test
 
-# Test specific application
-nx test database-api
+```bash
+# Test database-api
+cd database-api
+bun run test
+
+# Test client
+cd client
+bun run test
 ```
+
+## 📋 Architecture Overview
+
+### Database API Service
+- **Express.js** server with TypeScript
+- **Multi-tenant** PostgreSQL schema management
+- **Redis** for caching and session management
+- **WebSocket** support for real-time updates
+- **Winston** logging with daily log rotation
+- **JWT** authentication and authorization
+- **Rate limiting** and security middleware
+
+### Client Application
+- **Next.js 15** with App Router
+- **React 19** with TypeScript
+- **Tailwind CSS** for styling
+- **shadcn/ui** component library
+- **React Query** for server state management
+- **Recharts** for data visualization
+- **Monaco Editor** for code editing
+
+### Database Layer
+- **PostgreSQL** as primary database
+- **Redis** for caching and real-time features
+- **Dynamic schema** creation per tenant
+- **Multi-tenant** data isolation
 
 ## 📋 Best Practices
 
 ### Code Organization
-- Keep applications focused on their specific domain
-- Use shared packages for common functionality
-- Maintain clear separation of concerns
-- Follow consistent naming conventions
+- Each service is self-contained with its own dependencies
+- Shared utilities are duplicated to avoid coupling
+- Clear separation of concerns between services
+- Consistent naming conventions across services
 
 ### Development
 - Use TypeScript for all new code
-- Write tests for all functionality
-- Follow the established code style
-- Use shared packages when possible
+- Follow established code style and linting rules
+- Write tests for critical functionality
+- Use environment variables for configuration
 
 ### Deployment
 - Use Docker for consistent environments
-- Follow the established CI/CD pipeline
-- Test thoroughly before deployment
-- Monitor applications in production
+- Each service has its own container
+- Use docker-compose for local development
+- Monitor applications and logs in production
 
 ---
 
-This structure provides a scalable and maintainable foundation for the Tenanta platform. 
+This structure provides a scalable and maintainable foundation for the Tenanta platform without the complexity of a monorepo setup. 
