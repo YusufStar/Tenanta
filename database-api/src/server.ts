@@ -16,6 +16,7 @@ import { DatabaseService } from './services/databaseService';
 import tenantRoutes from './routes/tenantRoutes';
 import logRoutes from './routes/logRoutes';
 import schemaRoutes from './routes/schemaRoutes';
+import databaseRoutes from './routes/databaseRoutes';
 
 export async function createApiServer() {
   const app = express();
@@ -78,6 +79,7 @@ export async function createApiServer() {
   app.use(`${basePath}/tenants`, tenantRoutes);
   app.use(`${basePath}/schemas`, schemaRoutes);
   app.use(`${basePath}/logs`, logRoutes);
+  app.use(`${basePath}/database`, databaseRoutes);
 
   // Error handling middleware
   app.use(notFoundHandler);

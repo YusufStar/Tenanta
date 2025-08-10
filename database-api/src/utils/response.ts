@@ -18,6 +18,51 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   message?: string | undefined;
 }
 
+// ApiResponse class with static methods
+export class ApiResponse {
+  static success<T>(data: T, message: string = 'Success'): ApiResponse<T> {
+    return {
+      success: true,
+      data,
+      message,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  static error(message: string, code?: string, details?: any): ApiResponse {
+    return {
+      success: false,
+      message,
+      timestamp: new Date().toISOString(),
+      ...(code && { code }),
+      ...(details && { details }),
+    };
+  }
+
+  static paginated<T>(
+    data: T[],
+    page: number,
+    limit: number,
+    total: number,
+    message: string = 'Data retrieved successfully'
+  ): PaginatedResponse<T> {
+    const totalPages = Math.ceil(total / limit);
+    return {
+      success: true,
+      data,
+      message,
+      timestamp: new Date().toISOString(),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    };
+  }
+}
 
 // Helper functions for creating response objects
 export function createSuccessResponse<T>(

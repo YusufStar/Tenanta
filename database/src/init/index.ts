@@ -42,6 +42,7 @@ async function initializeDatabase() {
       DROP TABLE IF EXISTS tenant_3.application_logs CASCADE;
 
       -- Drop all tables in public schema
+      DROP TABLE IF EXISTS public.sql_query_history CASCADE;
       DROP TABLE IF EXISTS public.performance_metrics CASCADE;
       DROP TABLE IF EXISTS public.database_activity_logs CASCADE;
       DROP TABLE IF EXISTS public.system_logs CASCADE;
@@ -160,6 +161,25 @@ async function initializeDatabase() {
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
 
+      -- Create SQL query history table
+      CREATE TABLE IF NOT EXISTS public.sql_query_history (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          tenant_id UUID REFERENCES public.tenants(id) ON DELETE CASCADE,
+          query_text TEXT NOT NULL,
+          query_hash VARCHAR(64) NOT NULL, -- SHA-256 hash of the query for deduplication
+          execution_timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          execution_time_ms INTEGER NOT NULL,
+          rows_affected INTEGER DEFAULT 0,
+          success BOOLEAN NOT NULL DEFAULT false,
+          error_message TEXT,
+          result_columns JSONB DEFAULT '[]', -- Array of column names
+          result_preview JSONB DEFAULT '[]', -- First few rows for preview (optional)
+          user_agent TEXT,
+          ip_address INET,
+          session_id VARCHAR(100),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+
       -- Create indexes for better performance
       CREATE INDEX IF NOT EXISTS idx_tenants_slug ON public.tenants(slug);
       CREATE INDEX IF NOT EXISTS idx_schemas_tenant_id ON public.schemas(tenant_id);
@@ -183,6 +203,13 @@ async function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_performance_metrics_timestamp ON public.performance_metrics(timestamp);
       CREATE INDEX IF NOT EXISTS idx_performance_metrics_tenant_id ON public.performance_metrics(tenant_id);
       CREATE INDEX IF NOT EXISTS idx_performance_metrics_name ON public.performance_metrics(metric_name);
+
+      -- SQL query history indexes
+      CREATE INDEX IF NOT EXISTS idx_sql_query_history_tenant_id ON public.sql_query_history(tenant_id);
+      CREATE INDEX IF NOT EXISTS idx_sql_query_history_timestamp ON public.sql_query_history(execution_timestamp);
+      CREATE INDEX IF NOT EXISTS idx_sql_query_history_hash ON public.sql_query_history(query_hash);
+      CREATE INDEX IF NOT EXISTS idx_sql_query_history_success ON public.sql_query_history(success);
+      CREATE INDEX IF NOT EXISTS idx_sql_query_history_session ON public.sql_query_history(session_id);
 
       -- Create updated_at trigger function
       CREATE OR REPLACE FUNCTION update_updated_at_column()

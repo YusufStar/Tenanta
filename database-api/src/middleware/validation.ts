@@ -1,6 +1,30 @@
 import { Request, Response, NextFunction } from 'express';
+import { validationResult } from 'express-validator';
 import { createErrorResponse } from '../utils/response';
 import { PaginationQuery, CreateTenantRequest } from '../types';
+
+/**
+ * Validate request using express-validator results
+ */
+export const validateRequest = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const errors = validationResult(req);
+  
+  if (!errors.isEmpty()) {
+    const errorMessages = errors.array().map(error => error.msg);
+    const errorResponse = createErrorResponse(
+      `Validation failed: ${errorMessages.join(', ')}`,
+      'VALIDATION_ERROR'
+    );
+    res.status(400).json(errorResponse);
+    return;
+  }
+  
+  next();
+};
 
 /**
  * Validate pagination query parameters
