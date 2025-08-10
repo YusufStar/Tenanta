@@ -1,4 +1,5 @@
 import { logger } from '../shared/logger';
+import { LogService } from './logService';
 import { getDatabasePool } from '../config/database';
 import { Pool } from 'pg';
 import crypto from 'crypto';
@@ -235,11 +236,44 @@ export class DatabaseService {
     const startTime = Date.now();
     let client;
 
+    logger.info(`🔄 Starting SQL query execution for tenant ${tenantId}`, {
+      tenantId,
+      queryType: this.getQueryType(query),
+      queryLength: query.length,
+      userAgent: metadata?.userAgent,
+      ipAddress: metadata?.ipAddress,
+      sessionId: metadata?.sessionId
+    });
+
     try {
+      // Validate query first
+      const validation = this.validateQuery(query);
+      if (!validation.isValid) {
+        logger.warn(`❌ Query validation failed for tenant ${tenantId}`, {
+          tenantId,
+          error: validation.error,
+          query: query.substring(0, 100) + (query.length > 100 ? '...' : '')
+        });
+        throw new Error(validation.error);
+      }
+
+      logger.info(`✅ Query validation passed for tenant ${tenantId}`, {
+        tenantId,
+        queryType: this.getQueryType(query)
+      });
+
       // Get tenant database connection
+      logger.info(`🔗 Establishing database connection for tenant ${tenantId}`, { tenantId });
       client = await this.getTenantDatabaseClient(tenantId);
+      logger.info(`✅ Database connection established for tenant ${tenantId}`, { tenantId });
       
       // Execute the query
+      logger.info(`⚡ Executing SQL query for tenant ${tenantId}`, {
+        tenantId,
+        queryType: this.getQueryType(query),
+        query: query.substring(0, 200) + (query.length > 200 ? '...' : '')
+      });
+
       const result = await client.query(query);
       
       const executionTime = Date.now() - startTime;
@@ -254,14 +288,35 @@ export class DatabaseService {
 
       logger.info(`✅ SQL query executed successfully for tenant ${tenantId}`, {
         tenantId,
-        query: query.substring(0, 100) + (query.length > 100 ? '...' : ''),
+        queryType: this.getQueryType(query),
         executionTime,
-        rowsAffected: queryResult.rowsAffected
+        rowsAffected: queryResult.rowsAffected,
+        columnsCount: queryResult.columns.length,
+        dataRowsCount: queryResult.data?.length || 0,
+        query: query.substring(0, 100) + (query.length > 100 ? '...' : '')
+      });
+
+      // Save to database logs for dashboard (async, don't wait for it)
+      LogService.createSystemLog({
+        tenantId,
+        level: 'success',
+        message: `SQL query executed successfully: ${this.getQueryType(query)} query returned ${queryResult.rowsAffected} rows in ${executionTime}ms`,
+        source: 'DatabaseService',
+        metadata: {
+          queryType: this.getQueryType(query),
+          executionTime,
+          rowsAffected: queryResult.rowsAffected,
+          columnsCount: queryResult.columns.length,
+          queryLength: query.length
+        }
+      }).catch(error => {
+        logger.error(`❌ Failed to save database log for successful query, tenant ${tenantId}:`, error);
       });
 
       // Save to history (async, don't wait for it)
+      logger.info(`💾 Saving query to history for tenant ${tenantId}`, { tenantId });
       this.saveQueryToHistory(tenantId, query, queryResult, metadata).catch(error => {
-        logger.error('Failed to save query to history:', error);
+        logger.error(`❌ Failed to save query to history for tenant ${tenantId}:`, error);
       });
 
       return queryResult;
@@ -278,22 +333,63 @@ export class DatabaseService {
 
       logger.error(`❌ SQL query failed for tenant ${tenantId}:`, {
         tenantId,
-        query: query.substring(0, 100) + (query.length > 100 ? '...' : ''),
+        queryType: this.getQueryType(query),
         error: errorResult.error,
-        executionTime
+        executionTime,
+        query: query.substring(0, 100) + (query.length > 100 ? '...' : ''),
+        userAgent: metadata?.userAgent,
+        ipAddress: metadata?.ipAddress
+      });
+
+      // Save to database logs for dashboard (async, don't wait for it)
+      LogService.createSystemLog({
+        tenantId,
+        level: 'error',
+        message: `SQL query execution failed: ${this.getQueryType(query)} query failed after ${executionTime}ms - ${errorResult.error}`,
+        source: 'DatabaseService',
+        metadata: {
+          queryType: this.getQueryType(query),
+          executionTime,
+          error: errorResult.error,
+          queryLength: query.length,
+          userAgent: metadata?.userAgent,
+          ipAddress: metadata?.ipAddress
+        }
+      }).catch(error => {
+        logger.error(`❌ Failed to save database log for failed query, tenant ${tenantId}:`, error);
       });
 
       // Save to history (async, don't wait for it)
       this.saveQueryToHistory(tenantId, query, errorResult, metadata).catch(error => {
-        logger.error('Failed to save query to history:', error);
+        logger.error(`❌ Failed to save query history for failed query, tenant ${tenantId}:`, error);
       });
 
       return errorResult;
     } finally {
       if (client) {
+        logger.info(`🔌 Releasing database connection for tenant ${tenantId}`, { tenantId });
         client.release();
       }
     }
+  }
+
+  /**
+   * Get the type of SQL query
+   */
+  private static getQueryType(query: string): string {
+    const trimmedQuery = query.trim().toUpperCase();
+    
+    if (trimmedQuery.startsWith('SELECT')) return 'SELECT';
+    if (trimmedQuery.startsWith('INSERT')) return 'INSERT';
+    if (trimmedQuery.startsWith('UPDATE')) return 'UPDATE';
+    if (trimmedQuery.startsWith('DELETE')) return 'DELETE';
+    if (trimmedQuery.startsWith('CREATE')) return 'CREATE';
+    if (trimmedQuery.startsWith('ALTER')) return 'ALTER';
+    if (trimmedQuery.startsWith('DROP')) return 'DROP';
+    if (trimmedQuery.startsWith('TRUNCATE')) return 'TRUNCATE';
+    if (trimmedQuery.startsWith('WITH')) return 'CTE';
+    
+    return 'OTHER';
   }
 
   /**
@@ -351,11 +447,25 @@ export class DatabaseService {
     const mainPool = getDatabasePool();
     let client;
 
+    logger.info(`💾 Starting to save query history for tenant ${tenantId}`, {
+      tenantId,
+      queryLength: query.length,
+      success: result.success,
+      executionTime: result.executionTime,
+      rowsAffected: result.rowsAffected
+    });
+
     try {
       client = await mainPool.connect();
       
       // Create hash of the query for deduplication
       const queryHash = crypto.createHash('sha256').update(query.trim()).digest('hex');
+      
+      logger.info(`🔐 Generated query hash for tenant ${tenantId}`, {
+        tenantId,
+        queryHash: queryHash.substring(0, 12) + '...',
+        queryType: this.getQueryType(query)
+      });
       
       // Prepare result preview (first 5 rows)
       const resultPreview = result.data?.slice(0, 5) || [];
@@ -367,6 +477,15 @@ export class DatabaseService {
           result_preview, user_agent, ip_address, session_id
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       `;
+      
+      logger.info(`📝 Inserting query history record for tenant ${tenantId}`, {
+        tenantId,
+        columnsCount: result.columns?.length || 0,
+        previewRowsCount: resultPreview.length,
+        hasUserAgent: !!metadata?.userAgent,
+        hasIpAddress: !!metadata?.ipAddress,
+        hasSessionId: !!metadata?.sessionId
+      });
       
       await client.query(insertQuery, [
         tenantId,
@@ -383,15 +502,21 @@ export class DatabaseService {
         metadata?.sessionId || null
       ]);
 
-      logger.info(`✅ Query saved to history for tenant ${tenantId}`, {
+      logger.info(`✅ Query history saved successfully for tenant ${tenantId}`, {
         tenantId,
-        queryHash,
+        queryHash: queryHash.substring(0, 12) + '...',
         success: result.success,
-        executionTime: result.executionTime
+        executionTime: result.executionTime,
+        queryType: this.getQueryType(query)
       });
 
     } catch (error) {
-      logger.error(`❌ Failed to save query history for tenant ${tenantId}:`, error);
+      logger.error(`❌ Failed to save query history for tenant ${tenantId}:`, {
+        tenantId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        queryType: this.getQueryType(query),
+        executionTime: result.executionTime
+      });
       // Don't throw error for history saving failure
     } finally {
       if (client) {
@@ -419,6 +544,14 @@ export class DatabaseService {
     const mainPool = getDatabasePool();
     let client;
 
+    logger.info(`📊 Fetching query history for tenant ${tenantId}`, {
+      tenantId,
+      limit: options.limit || 50,
+      offset: options.offset || 0,
+      successOnly: options.successOnly,
+      hasDateRange: !!(options.fromDate || options.toDate)
+    });
+
     try {
       client = await mainPool.connect();
       
@@ -437,21 +570,25 @@ export class DatabaseService {
       if (successOnly !== undefined) {
         conditions.push(`success = $${params.length + 1}`);
         params.push(successOnly);
+        logger.info(`🎯 Filtering by success status: ${successOnly} for tenant ${tenantId}`, { tenantId, successOnly });
       }
       
       if (fromDate) {
         conditions.push(`execution_timestamp >= $${params.length + 1}`);
         params.push(fromDate);
+        logger.info(`📅 Filtering from date: ${fromDate.toISOString()} for tenant ${tenantId}`, { tenantId, fromDate });
       }
       
       if (toDate) {
         conditions.push(`execution_timestamp <= $${params.length + 1}`);
         params.push(toDate);
+        logger.info(`📅 Filtering to date: ${toDate.toISOString()} for tenant ${tenantId}`, { tenantId, toDate });
       }
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
       // Get total count
+      logger.info(`🔢 Getting total count of query history for tenant ${tenantId}`, { tenantId });
       const countQuery = `
         SELECT COUNT(*) as total 
         FROM public.sql_query_history 
@@ -460,6 +597,8 @@ export class DatabaseService {
       
       const countResult = await client.query(countQuery, params);
       const total = parseInt(countResult.rows[0].total);
+
+      logger.info(`📈 Found ${total} total history records for tenant ${tenantId}`, { tenantId, total });
 
       // Get history records
       const historyQuery = `
@@ -482,13 +621,25 @@ export class DatabaseService {
       params.push(limit, offset);
       const historyResult = await client.query(historyQuery, params);
 
+      logger.info(`✅ Retrieved ${historyResult.rows.length} query history records for tenant ${tenantId}`, {
+        tenantId,
+        retrievedCount: historyResult.rows.length,
+        total,
+        limit,
+        offset
+      });
+
       return {
         history: historyResult.rows,
         total
       };
 
     } catch (error) {
-      logger.error(`❌ Failed to get query history for tenant ${tenantId}:`, error);
+      logger.error(`❌ Failed to get query history for tenant ${tenantId}:`, {
+        tenantId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        options
+      });
       throw error;
     } finally {
       if (client) {

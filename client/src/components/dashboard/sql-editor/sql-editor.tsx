@@ -479,7 +479,7 @@ SELECT * FROM users LIMIT 10;`);
                             </ScrollArea>
                         </TabsContent>
 
-                        <TabsContent value="history" className="flex-1 m-0">
+                        <TabsContent value="history" className="h-full m-0 pb-16">
                             <ScrollArea className="h-full">
                                 {!queryHistoryData?.data || queryHistoryData.data.length === 0 ? (
                                     <div className="flex items-center justify-center h-full p-8">

@@ -14,6 +14,9 @@ router.post('/', validateCreateTenant, tenantController.createTenant);
 // GET /api/v1/tenants/:id - Get tenant by ID
 router.get('/:id', tenantController.getTenantById);
 
+// GET /api/v1/tenants/:id/dashboard - Get tenant dashboard data
+router.get('/:id/dashboard', tenantController.getTenantDashboard);
+
 // DELETE /api/v1/tenants/:id - Delete tenant by ID
 router.delete('/:id', tenantController.deleteTenant);
 

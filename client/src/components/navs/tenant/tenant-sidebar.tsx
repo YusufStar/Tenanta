@@ -50,8 +50,6 @@ export function TenantSidebar({ tenantId, ...props }: React.ComponentProps<typeo
         <span className="text-lg font-medium">
           Tenanta
         </span>
-
-        <ModeToggle />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

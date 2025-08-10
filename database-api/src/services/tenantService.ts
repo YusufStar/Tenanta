@@ -1,6 +1,7 @@
 import { getDatabasePool } from '../config/database';
 import { getRedisClient, getTenantRedisClient } from '../config/redis';
 import { logger } from '../shared/logger';
+import { LogService } from './logService';
 import { Tenant, CreateTenantRequest, UpdateTenantRequest } from '../types';
 import { DatabaseService } from './databaseService';
 
@@ -169,10 +170,43 @@ export class TenantService {
         operation: 'createTenant'
       });
 
+      // Save to database logs for dashboard
+      LogService.createSystemLog({
+        tenantId: tenant.id,
+        level: 'success',
+        message: `Tenant "${tenant.name}" created successfully with database and Redis setup`,
+        source: 'TenantController',
+        metadata: {
+          tenantId: tenant.id,
+          tenantName: tenant.name,
+          tenantSlug: tenant.slug,
+          databaseName: `tenant_${tenant.id.replace(/-/g, '_')}`,
+          operation: 'createTenant'
+        }
+      }).catch(error => {
+        logger.error('Failed to save tenant creation log:', error);
+      });
+
       return tenant;
     } catch (error) {
       await client.query('ROLLBACK');
       logger.error(`❌ Failed to create tenant "${data.name}":`, error);
+      
+      // Save to database logs for dashboard
+      LogService.createSystemLog({
+        level: 'error',
+        message: `Failed to create tenant "${data.name}": ${error instanceof Error ? error.message : 'Unknown error'}`,
+        source: 'TenantController',
+        metadata: {
+          tenantName: data.name,
+          tenantSlug: data.slug,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          operation: 'createTenant'
+        }
+      }).catch(logError => {
+        logger.error('Failed to save tenant creation error log:', logError);
+      });
+      
       throw error;
     } finally {
       client.release();
@@ -185,9 +219,26 @@ export class TenantService {
   private static async createTenantTables(tenantId: string, tenantName: string): Promise<void> {
     let tenantClient;
 
+    logger.info(`🏗️ Starting tenant tables creation for "${tenantName}"`, {
+      tenantId,
+      tenantName,
+      operation: 'createTenantTables'
+    });
+
     try {
       // Get client from tenant's own database
+      logger.info(`🔗 Connecting to tenant database for table creation`, {
+        tenantId,
+        tenantName,
+        databaseName: `tenant_${tenantId.replace(/-/g, '_')}`
+      });
+      
       tenantClient = await DatabaseService.getTenantDatabaseClient(tenantId);
+
+      logger.info(`✅ Connected to tenant database, creating users table`, {
+        tenantId,
+        tenantName
+      });
 
       // Create users table
       const createUsersTableSQL = `
@@ -207,8 +258,18 @@ export class TenantService {
       `;
 
       await tenantClient.query(createUsersTableSQL);
+      logger.info(`✅ Users table created successfully`, {
+        tenantId,
+        tenantName,
+        tableName: 'users'
+      });
 
       // Create sessions table with foreign key to users
+      logger.info(`🔗 Creating sessions table with foreign key relationship`, {
+        tenantId,
+        tenantName
+      });
+
       const createSessionsTableSQL = `
         CREATE TABLE IF NOT EXISTS sessions (
           id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -226,20 +287,53 @@ export class TenantService {
       `;
 
       await tenantClient.query(createSessionsTableSQL);
+      logger.info(`✅ Sessions table created successfully with foreign key`, {
+        tenantId,
+        tenantName,
+        tableName: 'sessions',
+        foreignKey: 'user_id -> users.id'
+      });
 
       // Create indexes for users table
+      logger.info(`📊 Creating indexes for users table`, {
+        tenantId,
+        tenantName
+      });
+
       await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`);
       await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
       await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active)`);
       await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_users_email_verified ON users(email_verified)`);
 
+      logger.info(`✅ Users table indexes created successfully`, {
+        tenantId,
+        tenantName,
+        indexes: ['idx_users_username', 'idx_users_email', 'idx_users_active', 'idx_users_email_verified']
+      });
+
       // Create indexes for sessions table
+      logger.info(`📊 Creating indexes for sessions table`, {
+        tenantId,
+        tenantName
+      });
+
       await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)`);
       await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(session_token)`);
       await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_sessions_active ON sessions(is_active)`);
       await tenantClient.query(`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`);
 
+      logger.info(`✅ Sessions table indexes created successfully`, {
+        tenantId,
+        tenantName,
+        indexes: ['idx_sessions_user_id', 'idx_sessions_token', 'idx_sessions_active', 'idx_sessions_expires']
+      });
+
       // Create updated_at triggers for both tables
+      logger.info(`⚡ Creating updated_at triggers for tables`, {
+        tenantId,
+        tenantName
+      });
+
       const createUsersTriggerSQL = `
         DROP TRIGGER IF EXISTS update_users_updated_at ON users;
         CREATE TRIGGER update_users_updated_at 
@@ -255,54 +349,131 @@ export class TenantService {
       `;
 
       await tenantClient.query(createUsersTriggerSQL);
-      await tenantClient.query(createSessionsTriggerSQL);
+      logger.info(`✅ Users table trigger created successfully`, {
+        tenantId,
+        tenantName,
+        trigger: 'update_users_updated_at'
+      });
 
-      logger.info(`✅ Tables created successfully in tenant database for "${tenantName}"`, {
+      await tenantClient.query(createSessionsTriggerSQL);
+      logger.info(`✅ Sessions table trigger created successfully`, {
+        tenantId,
+        tenantName,
+        trigger: 'update_sessions_updated_at'
+      });
+
+      logger.info(`🎉 Tables created successfully in tenant database for "${tenantName}"`, {
         tenantId,
         tenantName,
         databaseName: `tenant_${tenantId.replace(/-/g, '_')}`,
         tables: ['users', 'sessions'],
         relationships: ['sessions.user_id -> users.id'],
+        indexes: 8,
+        triggers: 2,
         operation: 'createTenantTables'
       });
 
     } catch (error) {
-      logger.error(`❌ Failed to create tables in tenant database for "${tenantName}":`, error);
+      logger.error(`❌ Failed to create tables in tenant database for "${tenantName}":`, {
+        tenantId,
+        tenantName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        operation: 'createTenantTables'
+      });
       throw error;
     } finally {
       if (tenantClient) {
         tenantClient.release();
+        logger.info(`🔌 Released tenant database connection for "${tenantName}"`, {
+          tenantId,
+          tenantName
+        });
       }
     }
   }
 
   private static async setupTenantRedis(tenantId: string, tenantName: string): Promise<void> {
+    logger.info(`🔗 Starting Redis setup for tenant "${tenantName}"`, {
+      tenantId,
+      tenantName,
+      operation: 'setupTenantRedis'
+    });
+
     try {
       // Get tenant-specific Redis client
+      logger.info(`📡 Connecting to tenant-specific Redis client`, {
+        tenantId,
+        tenantName
+      });
+
       const tenantRedis = await getTenantRedisClient(tenantId);
 
       // Test the connection
+      logger.info(`🔄 Testing Redis connection with ping`, {
+        tenantId,
+        tenantName
+      });
+
       await tenantRedis.ping();
+      logger.info(`✅ Redis ping successful`, {
+        tenantId,
+        tenantName
+      });
 
       // Initialize tenant-specific Redis keys
+      logger.info(`🔑 Setting up initial Redis keys for tenant`, {
+        tenantId,
+        tenantName
+      });
+
       await tenantRedis.set(`tenant:${tenantId}:info`, JSON.stringify({
         name: tenantName,
         createdAt: new Date().toISOString(),
         status: 'active'
       }));
 
-      // Set up default Redis keys for the tenant
-      await tenantRedis.set(`tenant:${tenantId}:users:count`, '0');
-      await tenantRedis.set(`tenant:${tenantId}:cache:version`, '1.0');
-
-      logger.info(`✅ Redis database setup completed for tenant "${tenantName}"`, {
+      logger.info(`✅ Tenant info key created`, {
         tenantId,
         tenantName,
+        key: `tenant:${tenantId}:info`
+      });
+
+      // Set up default Redis keys for the tenant
+      await tenantRedis.set(`tenant:${tenantId}:users:count`, '0');
+      logger.info(`✅ Users count key initialized`, {
+        tenantId,
+        tenantName,
+        key: `tenant:${tenantId}:users:count`,
+        initialValue: '0'
+      });
+
+      await tenantRedis.set(`tenant:${tenantId}:cache:version`, '1.0');
+      logger.info(`✅ Cache version key initialized`, {
+        tenantId,
+        tenantName,
+        key: `tenant:${tenantId}:cache:version`,
+        initialValue: '1.0'
+      });
+
+      logger.info(`🎉 Redis database setup completed for tenant "${tenantName}"`, {
+        tenantId,
+        tenantName,
+        keysCreated: 3,
+        keys: [
+          `tenant:${tenantId}:info`,
+          `tenant:${tenantId}:users:count`,
+          `tenant:${tenantId}:cache:version`
+        ],
         operation: 'setupTenantRedis'
       });
 
     } catch (error) {
-      logger.error(`❌ Failed to setup Redis database for tenant "${tenantName}":`, error);
+      logger.error(`❌ Failed to setup Redis database for tenant "${tenantName}":`, {
+        tenantId,
+        tenantName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        operation: 'setupTenantRedis'
+      });
       throw error;
     }
   }
@@ -533,6 +704,23 @@ export class TenantService {
         operation: 'deleteTenant'
       });
 
+      // Save to database logs for dashboard
+      LogService.createSystemLog({
+        tenantId: id,
+        level: 'warning',
+        message: `Tenant "${tenant.name}" deleted successfully with database and Redis cleanup`,
+        source: 'TenantController',
+        metadata: {
+          tenantId: id,
+          tenantName: tenant.name,
+          tenantSlug: tenant.slug,
+          schemaName: tenant.schema_name,
+          operation: 'deleteTenant'
+        }
+      }).catch(error => {
+        logger.error('Failed to save tenant deletion log:', error);
+      });
+
       return true;
     } catch (error) {
       await client.query('ROLLBACK');
@@ -544,27 +732,74 @@ export class TenantService {
   }
 
   private static async cleanupTenantRedis(tenantId: string, tenantName: string): Promise<void> {
+    logger.info(`🧹 Starting Redis cleanup for tenant "${tenantName}"`, {
+      tenantId,
+      tenantName,
+      operation: 'cleanupTenantRedis'
+    });
+
     try {
       // Get tenant-specific Redis client
+      logger.info(`📡 Connecting to tenant Redis client for cleanup`, {
+        tenantId,
+        tenantName
+      });
+
       const tenantRedis = await getTenantRedisClient(tenantId);
 
       // Clear all keys for this tenant
+      logger.info(`🔍 Searching for tenant-specific keys to delete`, {
+        tenantId,
+        tenantName,
+        pattern: `tenant:${tenantId}:*`
+      });
+
       const keys = await tenantRedis.keys(`tenant:${tenantId}:*`);
+      
+      logger.info(`📋 Found ${keys.length} tenant-specific keys`, {
+        tenantId,
+        tenantName,
+        keysCount: keys.length,
+        keys: keys.slice(0, 10) // Log first 10 keys for debugging
+      });
+
       if (keys.length > 0) {
         await tenantRedis.del(...keys);
+        logger.info(`🗑️ Deleted ${keys.length} tenant-specific keys`, {
+          tenantId,
+          tenantName,
+          deletedKeysCount: keys.length
+        });
+      } else {
+        logger.info(`ℹ️ No tenant-specific keys found to delete`, {
+          tenantId,
+          tenantName
+        });
       }
 
       // Clear the entire database
+      logger.info(`🔄 Flushing entire Redis database for tenant`, {
+        tenantId,
+        tenantName
+      });
+
       await tenantRedis.flushDb();
 
       logger.info(`✅ Redis database cleaned up successfully for tenant "${tenantName}"`, {
         tenantId,
         tenantName,
+        deletedKeys: keys.length,
+        databaseFlushed: true,
         operation: 'cleanupTenantRedis'
       });
 
     } catch (error) {
-      logger.error(`❌ Failed to cleanup Redis database for tenant "${tenantName}":`, error);
+      logger.error(`❌ Failed to cleanup Redis database for tenant "${tenantName}":`, {
+        tenantId,
+        tenantName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        operation: 'cleanupTenantRedis'
+      });
       throw error;
     }
   }

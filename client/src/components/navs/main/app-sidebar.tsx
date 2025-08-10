@@ -47,8 +47,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <span className="text-lg font-medium">
           Tenanta
         </span>
-
-        <ModeToggle />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

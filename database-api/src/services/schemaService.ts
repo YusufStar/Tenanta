@@ -1,4 +1,5 @@
 import { logger } from '../shared/logger';
+import { LogService } from './logService';
 import { getDatabasePool } from '../config/database';
 import { Schema, CreateSchemaRequest, UpdateSchemaRequest } from '../types';
 import { DatabaseService } from './databaseService';
@@ -362,9 +363,19 @@ export class SchemaService {
   }): Promise<Schema> {
     const pool = getDatabasePool();
     
+    logger.info(`🚀 Starting tenant schema update process for tenant ${tenantId}`, {
+      tenantId,
+      schemaName: data.name,
+      hasDescription: !!data.description,
+      hasDefinition: !!data.definition,
+      hasDbmlCode: !!(data.definition?.code)
+    });
+    
     try {
       // First, update the JSON schema definition in public.schemas
       let schema: Schema;
+      
+      logger.info(`🔍 Checking for existing schema for tenant ${tenantId}`, { tenantId });
       
       // Check if tenant has an existing schema
       const existingSchema = await pool.query(
@@ -375,6 +386,13 @@ export class SchemaService {
       if (existingSchema.rows.length > 0) {
         // Update existing schema
         const schemaId = existingSchema.rows[0].id;
+        
+        logger.info(`🔄 Updating existing schema for tenant ${tenantId}`, {
+          tenantId,
+          schemaId,
+          schemaName: data.name
+        });
+        
         const result = await pool.query(
           `UPDATE public.schemas 
            SET name = $1, description = $2, definition = $3, updated_at = NOW(), version = version + 1
@@ -393,14 +411,20 @@ export class SchemaService {
         );
 
         schema = result.rows[0];
-        logger.info('Tenant schema JSON updated successfully', { 
+        logger.info(`✅ Tenant schema JSON updated successfully`, { 
           tenantId,
           schemaId: schema.id,
           schemaName: schema.name,
-          version: schema.version
+          version: schema.version,
+          previousVersion: schema.version - 1
         });
       } else {
         // Create new schema for tenant
+        logger.info(`📝 Creating new schema for tenant ${tenantId}`, {
+          tenantId,
+          schemaName: data.name
+        });
+        
         const result = await pool.query(
           `INSERT INTO public.schemas (tenant_id, name, description, definition)
            VALUES ($1, $2, $3, $4)
@@ -418,37 +442,94 @@ export class SchemaService {
         );
 
         schema = result.rows[0];
-        logger.info('Tenant schema JSON created successfully', { 
+        logger.info(`✅ Tenant schema JSON created successfully`, { 
           tenantId, 
           schemaId: schema.id,
-          schemaName: schema.name 
+          schemaName: schema.name,
+          version: schema.version
         });
       }
 
       // Now recreate the actual PostgreSQL schema from DBML
       if (data.definition && data.definition.code) {
-        logger.info('Recreating actual PostgreSQL schema from DBML', {
+        logger.info(`🔨 Starting PostgreSQL schema recreation from DBML for tenant ${tenantId}`, {
           tenantId,
           schemaId: schema.id,
-          codeLength: data.definition.code.length
+          codeLength: data.definition.code.length,
+          estimatedTables: (data.definition.code.match(/Table\s+\w+\s*\{/g) || []).length,
+          estimatedRelationships: (data.definition.code.match(/Ref:\s*\w+\.\w+\s*>\s*\w+\.\w+/g) || []).length
         });
         
         await this.recreateTenantSchema(tenantId, data.definition.code);
         
-        logger.info('PostgreSQL schema recreation completed successfully', {
+        logger.info(`🎉 PostgreSQL schema recreation completed successfully for tenant ${tenantId}`, {
           tenantId,
-          schemaId: schema.id
+          schemaId: schema.id,
+          schemaName: schema.name,
+          version: schema.version
         });
       } else {
-        logger.warn('No DBML code found in definition, skipping PostgreSQL schema recreation', {
+        logger.warn(`⚠️ No DBML code found in definition, skipping PostgreSQL schema recreation for tenant ${tenantId}`, {
           tenantId,
-          schemaId: schema.id
+          schemaId: schema.id,
+          hasDefinition: !!data.definition,
+          definitionKeys: data.definition ? Object.keys(data.definition) : []
         });
       }
 
+      logger.info(`🏁 Tenant schema update process completed successfully for tenant ${tenantId}`, {
+        tenantId,
+        schemaId: schema.id,
+        schemaName: schema.name,
+        version: schema.version,
+        finalStatus: 'success'
+      });
+
+      // Save to database logs for dashboard
+      LogService.createSystemLog({
+        tenantId,
+        level: 'success',
+        message: `Schema "${schema.name}" updated successfully (version ${schema.version}) with ${(data.definition.code?.match(/Table\s+\w+\s*\{/g) || []).length} tables`,
+        source: 'SchemaController',
+        metadata: {
+          tenantId,
+          schemaId: schema.id,
+          schemaName: schema.name,
+          version: schema.version,
+          tablesCount: (data.definition.code?.match(/Table\s+\w+\s*\{/g) || []).length,
+          relationshipsCount: (data.definition.code?.match(/Ref:\s*\w+\.\w+\s*>\s*\w+\.\w+/g) || []).length,
+          operation: 'updateSchema'
+        }
+      }).catch(error => {
+        logger.error('Failed to save schema update log:', error);
+      });
+
       return schema;
     } catch (error) {
-      logger.error('Failed to update tenant schema:', error);
+      logger.error(`❌ Failed to update tenant schema for tenant ${tenantId}:`, {
+        tenantId,
+        schemaName: data.name,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        hasDbmlCode: !!(data.definition?.code)
+      });
+
+      // Save to database logs for dashboard
+      LogService.createSystemLog({
+        tenantId,
+        level: 'error',
+        message: `Failed to update schema "${data.name}": ${error instanceof Error ? error.message : 'Unknown error'}`,
+        source: 'SchemaController',
+        metadata: {
+          tenantId,
+          schemaName: data.name,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          hasDbmlCode: !!(data.definition?.code),
+          operation: 'updateSchema'
+        }
+      }).catch(logError => {
+        logger.error('Failed to save schema update error log:', logError);
+      });
+
       throw error;
     }
   }
@@ -917,14 +998,24 @@ export class SchemaService {
   static async recreateTenantSchema(tenantId: string, dbmlCode: string): Promise<void> {
     let tenantClient;
     
+    logger.info(`🔧 Starting schema recreation for tenant ${tenantId}`, {
+      tenantId,
+      dbmlCodeLength: dbmlCode.length,
+      estimatedTables: (dbmlCode.match(/Table\s+\w+\s*\{/g) || []).length,
+      estimatedRelationships: (dbmlCode.match(/Ref:\s*\w+\.\w+\s*>\s*\w+\.\w+/g) || []).length
+    });
+    
     try {
       // Get tenant database client
+      logger.info(`🔗 Connecting to tenant database for schema recreation, tenant ${tenantId}`, { tenantId });
       tenantClient = await DatabaseService.getTenantDatabaseClient(tenantId);
       await tenantClient.query('BEGIN');
       
-      logger.info(`Recreating schema for tenant ${tenantId} in tenant's own database`);
+      logger.info(`✅ Connected to tenant database, starting schema recreation for tenant ${tenantId}`, { tenantId });
 
       // Drop all existing tables and recreate from schema definition
+      logger.info(`🧹 Dropping all existing tables for complete recreation, tenant ${tenantId}`, { tenantId });
+      
       const dropTablesQuery = `
         DO $$ 
         DECLARE
@@ -942,41 +1033,166 @@ export class SchemaService {
       `;
       
       await tenantClient.query(dropTablesQuery);
-      logger.info(`Dropped all existing tables in tenant database for complete recreation`);
+      logger.info(`✅ Dropped all existing tables in tenant database for complete recreation, tenant ${tenantId}`, { tenantId });
 
       // Parse DBML to SQL
+      logger.info(`🔍 Parsing DBML code to SQL statements for tenant ${tenantId}`, { 
+        tenantId,
+        dbmlCodeLength: dbmlCode.length 
+      });
+      
       const { createTables, createConstraints } = this.parseDBMLToSQL(dbmlCode, 'public');
 
+      logger.info(`📊 DBML parsing completed for tenant ${tenantId}`, {
+        tenantId,
+        tablesCount: createTables.length,
+        constraintsCount: createConstraints.length
+      });
+
       // Create tables
-      for (const createTableSQL of createTables) {
+      logger.info(`🏗️ Creating ${createTables.length} tables for tenant ${tenantId}`, {
+        tenantId,
+        tablesCount: createTables.length
+      });
+      
+      for (let i = 0; i < createTables.length; i++) {
+        const createTableSQL = createTables[i];
+        
+        if (!createTableSQL) {
+          logger.warn(`⚠️ Skipping undefined table SQL at index ${i} for tenant ${tenantId}`, {
+            tenantId,
+            tableIndex: i + 1
+          });
+          continue;
+        }
+        
+        // Extract table name for logging
+        const tableNameMatch = createTableSQL.match(/CREATE TABLE IF NOT EXISTS public\.(\w+)/);
+        const tableName = tableNameMatch ? tableNameMatch[1] : `table_${i + 1}`;
+        
+        logger.info(`🔨 Creating table ${tableName} (${i + 1}/${createTables.length}) for tenant ${tenantId}`, {
+          tenantId,
+          tableName,
+          tableIndex: i + 1,
+          totalTables: createTables.length
+        });
+        
         await tenantClient.query(createTableSQL);
+        
+        logger.info(`✅ Table ${tableName} created successfully for tenant ${tenantId}`, {
+          tenantId,
+          tableName
+        });
       }
-      logger.info(`Created ${createTables.length} tables`);
+      
+      logger.info(`🎉 Created ${createTables.length} tables successfully for tenant ${tenantId}`, {
+        tenantId,
+        tablesCount: createTables.length
+      });
 
       // Create constraints and triggers
-      for (const constraintSQL of createConstraints) {
+      logger.info(`🔗 Processing ${createConstraints.length} constraints for tenant ${tenantId}`, {
+        tenantId,
+        constraintsCount: createConstraints.length
+      });
+      
+      for (let i = 0; i < createConstraints.length; i++) {
+        const constraintSQL = createConstraints[i];
+        
+        if (!constraintSQL) {
+          logger.warn(`⚠️ Skipping undefined constraint SQL at index ${i} for tenant ${tenantId}`, {
+            tenantId,
+            constraintIndex: i + 1
+          });
+          continue;
+        }
+        
+        logger.info(`🔧 Creating constraint ${i + 1}/${createConstraints.length} for tenant ${tenantId}`, {
+          tenantId,
+          constraintIndex: i + 1,
+          totalConstraints: createConstraints.length
+        });
+        
         try {
           await tenantClient.query(constraintSQL);
+          
+          logger.info(`✅ Constraint ${i + 1} created successfully for tenant ${tenantId}`, {
+            tenantId,
+            constraintIndex: i + 1
+          });
         } catch (constraintError) {
           // Log but don't fail on constraint errors (they might already exist)
-          logger.warn(`Failed to create constraint: ${constraintError}`);
+          logger.warn(`⚠️ Failed to create constraint ${i + 1} for tenant ${tenantId}`, {
+            tenantId,
+            constraintIndex: i + 1,
+            error: constraintError instanceof Error ? constraintError.message : 'Unknown constraint error'
+          });
         }
       }
-      logger.info(`Processed ${createConstraints.length} constraints`);
+      
+      logger.info(`✅ Processed ${createConstraints.length} constraints for tenant ${tenantId}`, {
+        tenantId,
+        constraintsCount: createConstraints.length
+      });
 
       await tenantClient.query('COMMIT');
       
-      logger.info(`Successfully recreated schema for tenant ${tenantId} in their own database`);
+      logger.info(`🏁 Successfully recreated schema for tenant ${tenantId} in their own database`, {
+        tenantId,
+        tablesCreated: createTables.length,
+        constraintsProcessed: createConstraints.length,
+        finalStatus: 'success'
+      });
+
+      // Save to database logs for dashboard
+      LogService.createSystemLog({
+        tenantId,
+        level: 'success',
+        message: `Database schema recreated successfully with ${createTables.length} tables and ${createConstraints.length} constraints`,
+        source: 'SchemaController',
+        metadata: {
+          tenantId,
+          tablesCreated: createTables.length,
+          constraintsProcessed: createConstraints.length,
+          operation: 'recreateTenantSchema'
+        }
+      }).catch(error => {
+        logger.error('Failed to save schema recreation log:', error);
+      });
       
     } catch (error) {
       if (tenantClient) {
         await tenantClient.query('ROLLBACK');
+        logger.error(`🔄 Rolled back transaction due to error for tenant ${tenantId}`, { tenantId });
       }
-      logger.error(`Failed to recreate tenant schema for ${tenantId}:`, error);
+      
+      logger.error(`❌ Failed to recreate tenant schema for ${tenantId}:`, {
+        tenantId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        dbmlCodeLength: dbmlCode.length
+      });
+
+      // Save to database logs for dashboard
+      LogService.createSystemLog({
+        tenantId,
+        level: 'error',
+        message: `Failed to recreate database schema: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        source: 'SchemaController',
+        metadata: {
+          tenantId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          dbmlCodeLength: dbmlCode.length,
+          operation: 'recreateTenantSchema'
+        }
+      }).catch(logError => {
+        logger.error('Failed to save schema recreation error log:', logError);
+      });
+
       throw error;
     } finally {
       if (tenantClient) {
         tenantClient.release();
+        logger.info(`🔌 Released tenant database connection for tenant ${tenantId}`, { tenantId });
       }
     }
   }

@@ -33,12 +33,36 @@ export class LogService {
     const redis = getRedisClient();
     const cacheKey = `${this.CACHE_PREFIX}system:${tenantId || 'all'}:${limit}:${offset}:${level || 'all'}`;
 
+    logger.info(`📊 Fetching system logs`, {
+      tenantId: tenantId || 'all',
+      limit,
+      offset,
+      level: level || 'all',
+      cacheKey: cacheKey.substring(0, 50) + '...',
+      operation: 'getSystemLogs'
+    });
+
     try {
       // Try to get from cache first
+      logger.info(`🔍 Checking cache for system logs`, {
+        tenantId: tenantId || 'all',
+        cacheKey: cacheKey.substring(0, 50) + '...'
+      });
+
       const cached = await redis.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        const cachedLogs = JSON.parse(cached);
+        logger.info(`✅ System logs found in cache`, {
+          tenantId: tenantId || 'all',
+          logsCount: cachedLogs.length,
+          source: 'cache'
+        });
+        return cachedLogs;
       }
+
+      logger.info(`ℹ️ Cache miss, fetching from database`, {
+        tenantId: tenantId || 'all'
+      });
 
       const pool = getDatabasePool();
       let query = `
@@ -60,16 +84,31 @@ export class LogService {
         query += ` AND tenant_id = $${paramIndex}`;
         params.push(tenantId);
         paramIndex++;
+        logger.info(`🎯 Filtering by tenant ID`, {
+          tenantId,
+          paramIndex: paramIndex - 1
+        });
       }
 
       if (level) {
         query += ` AND level = $${paramIndex}`;
         params.push(level);
         paramIndex++;
+        logger.info(`📊 Filtering by log level`, {
+          level,
+          paramIndex: paramIndex - 1
+        });
       }
 
       query += ` ORDER BY timestamp ASC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       params.push(limit, offset);
+
+      logger.info(`📝 Executing system logs query`, {
+        tenantId: tenantId || 'all',
+        finalParamsCount: params.length,
+        limit,
+        offset
+      });
 
       const result = await pool.query(query, params);
       const logs = result.rows.map(row => ({
@@ -78,18 +117,51 @@ export class LogService {
         metadata: row.metadata || {}
       }));
 
+      logger.info(`✅ System logs fetched from database`, {
+        tenantId: tenantId || 'all',
+        logsCount: logs.length,
+        source: 'database'
+      });
+
       // Cache the result
+      logger.info(`💾 Caching system logs result`, {
+        tenantId: tenantId || 'all',
+        logsCount: logs.length,
+        ttl: this.CACHE_TTL
+      });
+
       await redis.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(logs));
+
+      logger.info(`🏁 System logs retrieval completed`, {
+        tenantId: tenantId || 'all',
+        logsCount: logs.length,
+        cached: true
+      });
 
       return logs;
     } catch (error) {
-      logger.error('Failed to get system logs:', error);
+      logger.error(`❌ Failed to get system logs:`, {
+        tenantId: tenantId || 'all',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        limit,
+        offset,
+        level
+      });
       throw error;
     }
   }
 
    static async createSystemLog(data: CreateLogRequest): Promise<LogEntry> {
     const pool = getDatabasePool();
+    
+    logger.info(`📝 Creating new system log entry`, {
+      tenantId: data.tenantId || 'system',
+      level: data.level,
+      source: data.source || 'unknown',
+      messageLength: data.message.length,
+      hasMetadata: !!data.metadata,
+      operation: 'createSystemLog'
+    });
     
     try {
       const result = await pool.query(
@@ -107,26 +179,81 @@ export class LogService {
 
       const logEntry = result.rows[0];
       
+      logger.info(`✅ System log entry created successfully`, {
+        logId: logEntry.id,
+        tenantId: data.tenantId || 'system',
+        level: data.level,
+        source: data.source || 'unknown',
+        timestamp: logEntry.timestamp
+      });
+      
       // Clear cache
+      logger.info(`🧹 Clearing log cache after new entry creation`, {
+        logId: logEntry.id,
+        operation: 'clearLogCache'
+      });
+
       await this.clearLogCache();
       
-      logger.info('System log created', { logId: logEntry.id, level: data.level });
+      logger.info(`🏁 System log creation process completed`, { 
+        logId: logEntry.id, 
+        level: data.level,
+        tenantId: data.tenantId || 'system'
+      });
+
       return logEntry;
     } catch (error) {
-      logger.error('Failed to create system log:', error);
+      logger.error(`❌ Failed to create system log:`, {
+        tenantId: data.tenantId || 'system',
+        level: data.level,
+        source: data.source || 'unknown',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        messageLength: data.message.length
+      });
       throw error;
     }
   }
 
   private static async clearLogCache(): Promise<void> {
+    logger.info(`🧹 Starting log cache cleanup`, {
+      operation: 'clearLogCache',
+      cachePrefix: this.CACHE_PREFIX
+    });
+
     try {
       const redis = getRedisClient();
+      
+      logger.info(`🔍 Searching for cache keys to clear`, {
+        pattern: `${this.CACHE_PREFIX}*`
+      });
+
       const keys = await redis.keys(`${this.CACHE_PREFIX}*`);
+      
+      logger.info(`📋 Found ${keys.length} cache keys to delete`, {
+        keysCount: keys.length,
+        keys: keys.slice(0, 5) // Log first 5 keys for debugging
+      });
+
       if (keys.length > 0) {
         await redis.del(...keys);
+        logger.info(`✅ Successfully deleted ${keys.length} cache keys`, {
+          deletedKeysCount: keys.length
+        });
+      } else {
+        logger.info(`ℹ️ No cache keys found to delete`, {
+          pattern: `${this.CACHE_PREFIX}*`
+        });
       }
+
+      logger.info(`🏁 Log cache cleanup completed`, {
+        deletedKeys: keys.length
+      });
+
     } catch (error) {
-      logger.warn('Failed to clear log cache:', error);
+      logger.warn(`⚠️ Failed to clear log cache:`, {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        operation: 'clearLogCache'
+      });
     }
   }
 } 

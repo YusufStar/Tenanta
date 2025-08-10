@@ -4,6 +4,8 @@ import { LogService } from '../services/logService';
 import { createSuccessResponse, createErrorResponse, createPaginatedResponse } from '../utils/response';
 import { logger } from '../shared/logger';
 import { PaginationQuery, CreateTenantRequest } from '../types';
+import { DatabaseService } from '../services/databaseService';
+import { getDatabasePool } from '../config/database';
 
 export class TenantController {
   private tenantService: typeof TenantService;
@@ -42,6 +44,167 @@ export class TenantController {
       res.status(200).json(response);
     } catch (error) {
       logger.error('Error getting all tenants:', error);
+      next(error);
+    }
+  };
+
+  /**
+   * GET /api/v1/tenants/:id/dashboard
+   * Get rich dashboard data for a tenant (database metrics, history, logs, connection info)
+   */
+  public getTenantDashboard = async (
+    req: Request<{ id: string }>,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    const { id: tenantId } = req.params;
+    try {
+      // 1) Ensure tenant exists
+      const tenant = await this.tenantService.getTenantById(tenantId);
+      if (!tenant) {
+        const errorResponse = createErrorResponse('Tenant not found', 'TENANT_NOT_FOUND');
+        res.status(404).json(errorResponse);
+        return;
+      }
+
+      // 2) Build connection strings
+      const databaseUrl = process.env.DATABASE_URL || '';
+      const url = new URL(databaseUrl);
+      const tenantDbName = `tenant_${tenantId.replace(/-/g, '_')}`;
+      url.pathname = `/${tenantDbName}`;
+      const fullConnStr = url.toString();
+      // Mask password in connection string for display
+      const maskedUrl = new URL(fullConnStr);
+      if (maskedUrl.password) maskedUrl.password = '********';
+      const maskedConnStr = maskedUrl.toString();
+
+      // 3) Collect DB metrics from tenant DB
+      const tenantClient = await DatabaseService.getTenantDatabaseClient(tenantId);
+      let dbMetrics: any = {};
+      try {
+        // Execute sequential queries to avoid concurrency on same client
+        const sizeRes = await tenantClient.query(
+          `SELECT 
+             pg_database_size(current_database()) AS size_bytes,
+             pg_size_pretty(pg_database_size(current_database())) AS size_pretty`
+        );
+        const tablesCountRes = await tenantClient.query(
+          `SELECT COUNT(*)::int AS total_tables
+           FROM information_schema.tables 
+           WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`
+        );
+        const totalRowsRes = await tenantClient.query(
+          `SELECT COALESCE(SUM(n_live_tup),0)::bigint AS total_rows FROM pg_stat_user_tables`
+        );
+        const topTablesRes = await tenantClient.query(
+          `SELECT relname AS table_name,
+                  pg_total_relation_size(relid) AS size_bytes,
+                  pg_size_pretty(pg_total_relation_size(relid)) AS size_pretty
+           FROM pg_catalog.pg_statio_user_tables
+           ORDER BY pg_total_relation_size(relid) DESC
+           LIMIT 5`
+        );
+        const activeConnsRes = await tenantClient.query(
+          `SELECT COUNT(*)::int AS connections FROM pg_stat_activity WHERE datname = current_database()`
+        );
+        const versionRes = await tenantClient.query(`SELECT version(), NOW() AS current_time, current_database() AS dbname`);
+
+        dbMetrics = {
+          sizeBytes: Number(sizeRes.rows?.[0]?.size_bytes || 0),
+          sizePretty: sizeRes.rows?.[0]?.size_pretty || '0 bytes',
+          totalTables: Number(tablesCountRes.rows?.[0]?.total_tables || 0),
+          totalRows: Number(totalRowsRes.rows?.[0]?.total_rows || 0),
+          activeConnections: Number(activeConnsRes.rows?.[0]?.connections || 0),
+          version: versionRes.rows?.[0]?.version || '',
+          currentTime: versionRes.rows?.[0]?.current_time || new Date().toISOString(),
+          dbName: versionRes.rows?.[0]?.dbname || tenantDbName,
+          topTables: (topTablesRes.rows || []).map((r: any) => ({
+            tableName: r.table_name,
+            sizeBytes: Number(r.size_bytes || 0),
+            sizePretty: r.size_pretty,
+          }))
+        };
+      } finally {
+        tenantClient.release();
+      }
+
+      // 4) Query history metrics and recent queries from main DB
+      const mainPool = getDatabasePool();
+      const mainClient = await mainPool.connect();
+      let historySummary: any = { latest: [], metrics7d: { series: [], totals: { total: 0, success: 0, failure: 0 } } };
+      try {
+        const latestRes = await mainClient.query(
+          `SELECT id, query_text, execution_timestamp, execution_time_ms, rows_affected, success
+           FROM public.sql_query_history
+           WHERE tenant_id = $1
+           ORDER BY execution_timestamp DESC
+           LIMIT 5`,
+          [tenantId]
+        );
+
+        const metricsRes = await mainClient.query(
+          `SELECT date_trunc('day', execution_timestamp) AS day,
+                  COUNT(*)::int AS total,
+                  COUNT(*) FILTER (WHERE success) ::int AS success,
+                  COUNT(*) FILTER (WHERE NOT success) ::int AS failure
+           FROM public.sql_query_history
+           WHERE tenant_id = $1 AND execution_timestamp >= NOW() - interval '7 days'
+           GROUP BY 1
+           ORDER BY 1`,
+          [tenantId]
+        );
+
+        // Totals across 7 days
+        const totals = metricsRes.rows.reduce((acc: any, r: any) => {
+          acc.total += Number(r.total || 0);
+          acc.success += Number(r.success || 0);
+          acc.failure += Number(r.failure || 0);
+          return acc;
+        }, { total: 0, success: 0, failure: 0 });
+
+        historySummary = {
+          latest: latestRes.rows || [],
+          metrics7d: {
+            series: metricsRes.rows.map((r: any) => ({
+              day: (r.day instanceof Date) ? r.day.toISOString() : r.day,
+              total: Number(r.total || 0),
+              success: Number(r.success || 0),
+              failure: Number(r.failure || 0),
+            })),
+            totals
+          }
+        };
+      } finally {
+        mainClient.release();
+      }
+
+      // 5) Recent logs (system logs) for the tenant
+      const logs = await LogService.getSystemLogs(tenantId, 10, 0);
+
+      // 6) Connection checks (postgres/redis)
+      let connection = { postgresql: false, redis: false };
+      try {
+        const status = await this.tenantService.testTenantConnection(tenantId);
+        connection = { postgresql: status.postgresql, redis: status.redis };
+      } catch (e) {
+        logger.warn('Connection test failed for tenant dashboard', { tenantId });
+      }
+
+      const response = createSuccessResponse({
+        tenant,
+        connection,
+        connectionStrings: {
+          postgres: fullConnStr,
+          masked: maskedConnStr,
+        },
+        database: dbMetrics,
+        history: historySummary,
+        logs
+      }, 'Tenant dashboard data retrieved successfully');
+
+      res.status(200).json(response);
+    } catch (error) {
+      logger.error('Error getting tenant dashboard:', error);
       next(error);
     }
   };
