@@ -15,7 +15,7 @@ export function TenantLayout({ children, tenantId }: TenantLayoutProps) {
   return (
     <SidebarProvider suppressHydrationWarning>
       <TenantSidebar tenantId={tenantId} />
-      <SidebarInset className="h-screen overflow-hidden">
+      <SidebarInset className="h-screen">
         <div className="flex flex-col gap-4 h-full min-h-0">
           {children}
         </div>
