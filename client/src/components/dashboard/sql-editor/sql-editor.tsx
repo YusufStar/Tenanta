@@ -22,6 +22,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { useExecuteQuery, useDatabaseStatus, useQueryHistory } from "@/hooks/use-sql-editor";
+import { subHours, subDays, isAfter } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface QueryResult {
     id: string;
@@ -34,19 +36,19 @@ interface QueryResult {
     data?: any[];
     columns?: string[];
 }
-
 export default function SQLEditor() {
     const tenantId = useParams().id as string;
 
-    const [query, setQuery] = useState(`-- Welcome to SQL Editor
--- Write your SQL queries here and execute them
-
-SELECT * FROM users LIMIT 10;`);
+    const [query, setQuery] = useState(`-- Welcome to SQL Editor`);
 
     const [isExecuting, setIsExecuting] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const [queryResults, setQueryResults] = useState<QueryResult[]>([]);
     const [activeTab, setActiveTab] = useState("results");
+    
+    // History filters
+    const [statusFilter, setStatusFilter] = useState<string>("all");
+    const [timeFilter, setTimeFilter] = useState<string>("all");
 
     const editorRef = useRef<any>(null);
 
@@ -230,6 +232,50 @@ SELECT * FROM users LIMIT 10;`);
         return `${(ms / 1000).toFixed(2)}s`;
     };
 
+    const filterHistoryData = () => {
+        if (!queryHistoryData?.data) return [];
+        
+        let filteredData = [...queryHistoryData.data];
+        
+        // Status filter
+        if (statusFilter !== "all") {
+            filteredData = filteredData.filter(item => {
+                if (statusFilter === "success") return item.success;
+                if (statusFilter === "error") return !item.success;
+                return true;
+            });
+        }
+        
+        // Time filter using date-fns
+        if (timeFilter !== "all") {
+            const now = new Date();
+            let filterDate: Date;
+            
+            switch (timeFilter) {
+                case "1hour":
+                    filterDate = subHours(now, 1);
+                    break;
+                case "1day":
+                    filterDate = subDays(now, 1);
+                    break;
+                case "7days":
+                    filterDate = subDays(now, 7);
+                    break;
+                case "30days":
+                    filterDate = subDays(now, 30);
+                    break;
+                default:
+                    return filteredData;
+            }
+            
+            filteredData = filteredData.filter(item => 
+                isAfter(new Date(item.execution_timestamp), filterDate)
+            );
+        }
+        
+        return filteredData;
+    };
+
     return (
         <main className="h-full w-full flex flex-col">
             {/* Header */}
@@ -365,32 +411,30 @@ SELECT * FROM users LIMIT 10;`);
                 </section>
 
                 {/* Results Panel */}
-                <section className="w-[600px] flex flex-col">
+                <section className="w-[400px] flex flex-col overflow-hidden">
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-                        <div className="border-b border-border">
-                            <TabsList className="w-full justify-start h-auto p-0">
-                                <TabsTrigger value="results" className="gap-2">
-                                    <Activity className="h-4 w-4" />
-                                    Results
-                                    {queryResults.length > 0 && (
-                                        <Badge variant="secondary" className="text-xs">
-                                            {queryResults.length}
-                                        </Badge>
-                                    )}
-                                </TabsTrigger>
-                                <TabsTrigger value="history" className="gap-2">
-                                    <Clock className="h-4 w-4" />
-                                    History
-                                    {queryHistoryData?.data && queryHistoryData.data.length > 0 && (
-                                        <Badge variant="secondary" className="text-xs">
-                                            {queryHistoryData.data.length}
-                                        </Badge>
-                                    )}
-                                </TabsTrigger>
-                            </TabsList>
-                        </div>
+                        <TabsList className="w-full justify-start h-auto p-0 flex-shrink-0">
+                            <TabsTrigger value="results" className="gap-2">
+                                <Activity className="h-4 w-4" />
+                                Results
+                                {queryResults.length > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                        {queryResults.length}
+                                    </Badge>
+                                )}
+                            </TabsTrigger>
+                            <TabsTrigger value="history" className="gap-2">
+                                <Clock className="h-4 w-4" />
+                                History
+                                {queryHistoryData?.data && queryHistoryData.data.length > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                        {queryHistoryData.data.length}
+                                    </Badge>
+                                )}
+                            </TabsTrigger>
+                        </TabsList>
 
-                        <TabsContent value="results" className="flex-1 m-0">
+                        <TabsContent value="results" className="flex-1 m-0 overflow-hidden">
                             <ScrollArea className="h-full">
                                 {queryResults.length === 0 ? (
                                     <div className="flex items-center justify-center h-full p-8">
@@ -479,58 +523,107 @@ SELECT * FROM users LIMIT 10;`);
                             </ScrollArea>
                         </TabsContent>
 
-                        <TabsContent value="history" className="h-full m-0 pb-16">
-                            <ScrollArea className="h-full">
-                                {!queryHistoryData?.data || queryHistoryData.data.length === 0 ? (
-                                    <div className="flex items-center justify-center h-full p-8">
-                                        <div className="text-center">
-                                            <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                            <h3 className="text-lg font-medium mb-2">No query history</h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                Your executed queries will appear here
-                                            </p>
-                                        </div>
+                        <TabsContent value="history" className="flex-1 m-0 overflow-hidden">
+                            <div className="flex flex-col h-full">
+                                {/* Filter Controls */}
+                                <div className="flex items-center gap-3 p-3 border-b border-border flex-shrink-0">
+                                    <div className="flex flex-col gap-1 w-full">
+                                        <label className="text-xs font-medium text-muted-foreground">Status:</label>
+                                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                            <SelectTrigger className="w-full h-8">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All</SelectItem>
+                                                <SelectItem value="success">Success</SelectItem>
+                                                <SelectItem value="error">Error</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                ) : (
-                                    <div className="p-4 space-y-2">
-                                        {queryHistoryData.data.map((item) => (
-                                            <div
-                                                key={item.id}
-                                                className="border border-border rounded-lg p-3 hover:bg-muted/50 cursor-pointer transition-colors"
-                                                onClick={() => loadHistoryQuery(item.query_text)}
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        {item.success ? (
-                                                            <CheckCircle className="h-3 w-3 text-green-500" />
-                                                        ) : (
-                                                            <AlertTriangle className="h-3 w-3 text-red-500" />
-                                                        )}
-                                                        <span className="text-xs text-muted-foreground">
-                                                            {new Date(item.execution_timestamp).toLocaleTimeString('en-US', {
-                                                                hour12: false,
-                                                                hour: '2-digit',
-                                                                minute: '2-digit',
-                                                                second: '2-digit'
-                                                            })}
-                                                        </span>
+                                    
+                                    <div className="flex flex-col gap-1 w-full">
+                                        <label className="text-xs font-medium text-muted-foreground">Time:</label>
+                                        <Select value={timeFilter} onValueChange={setTimeFilter}>
+                                            <SelectTrigger className="w-full h-8">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All</SelectItem>
+                                                <SelectItem value="1hour">Last 1 hour</SelectItem>
+                                                <SelectItem value="1day">Last 1 day</SelectItem>
+                                                <SelectItem value="7days">Last 7 days</SelectItem>
+                                                <SelectItem value="30days">Last 30 days</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {/* History List */}
+                                <div className="flex-1 overflow-hidden">
+                                    <ScrollArea className="h-full">
+                                        {(() => {
+                                            const filteredData = filterHistoryData();
+                                            
+                                            if (filteredData.length === 0) {
+                                                return (
+                                                    <div className="flex items-center justify-center h-full p-8">
+                                                        <div className="text-center">
+                                                            <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                                            <h3 className="text-lg font-medium mb-2">No query history</h3>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {!queryHistoryData?.data || queryHistoryData.data.length === 0
+                                                                    ? "Your executed queries will appear here"
+                                                                    : "No queries match the current filters"
+                                                                }
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex gap-3 text-xs text-muted-foreground">
-                                                        <span>{formatDuration(item.execution_time_ms)}</span>
-                                                        <span>{item.rows_affected} rows</span>
-                                                    </div>
+                                                );
+                                            }
+                                            
+                                            return (
+                                                <div className="p-4 space-y-2">
+                                                    {filteredData.map((item) => (
+                                                        <div
+                                                            key={item.id}
+                                                            className="border border-border rounded-lg p-3 hover:bg-muted/50 cursor-pointer transition-colors"
+                                                            onClick={() => loadHistoryQuery(item.query_text)}
+                                                        >
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    {item.success ? (
+                                                                        <CheckCircle className="h-3 w-3 text-green-500" />
+                                                                    ) : (
+                                                                        <AlertTriangle className="h-3 w-3 text-red-500" />
+                                                                    )}
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        {new Date(item.execution_timestamp).toLocaleTimeString('en-US', {
+                                                                            hour12: false,
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit',
+                                                                            second: '2-digit'
+                                                                        })}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex gap-3 text-xs text-muted-foreground">
+                                                                    <span>{formatDuration(item.execution_time_ms)}</span>
+                                                                    <span>{item.rows_affected} rows</span>
+                                                                </div>
+                                                            </div>
+                                                            <code className="text-xs break-all">
+                                                                {item.query_text.length > 100
+                                                                    ? `${item.query_text.slice(0, 100)}...`
+                                                                    : item.query_text
+                                                                }
+                                                            </code>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                                <code className="text-xs break-all">
-                                                    {item.query_text.length > 150
-                                                        ? `${item.query_text.slice(0, 150)}...`
-                                                        : item.query_text
-                                                    }
-                                                </code>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </ScrollArea>
+                                            );
+                                        })()}
+                                    </ScrollArea>
+                                </div>
+                            </div>
                         </TabsContent>
                     </Tabs>
                 </section>

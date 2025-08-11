@@ -38,7 +38,7 @@ export default function TenantPage() {
                     behavior: 'smooth'
                 });
             }
-        }
+        }987
     }, [data?.history?.latest]);
 
     useEffect(() => {
