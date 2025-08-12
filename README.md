@@ -246,7 +246,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 📧 **Email**: yusuf@example.com
+- 📧 **Email**: 07yusufstar@gmail.com
 - 🐛 **Issues**: [GitHub Issues](https://github.com/YusufStar/Tenanta/issues)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/YusufStar/Tenanta/discussions)
 
