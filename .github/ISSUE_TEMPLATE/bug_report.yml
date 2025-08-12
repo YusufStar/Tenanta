@@ -1,0 +1,133 @@
+name: 🐛 Bug Report
+description: Create a report to help us improve Tenanta
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! 🐛
+        
+        Before submitting, please:
+        - Search existing issues to avoid duplicates
+        - Use the latest version of Tenanta
+        - Check our documentation and troubleshooting guides
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 📝 Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the bug you encountered...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: 🔄 Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: ✅ Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+      placeholder: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: ❌ Actual Behavior
+      description: What actually happened instead?
+      placeholder: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 📸 Screenshots
+      description: If applicable, add screenshots to help explain your problem.
+      placeholder: Drag and drop images here or paste them...
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: 🧩 Component
+      description: Which component is affected?
+      options:
+        - Client (Frontend)
+        - Database API (Backend)
+        - Database Setup
+        - Docker Configuration
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 🖥️ Environment
+      description: Please provide details about your environment
+      placeholder: |
+        - OS: [e.g. Windows 11, macOS 13, Ubuntu 22.04]
+        - Node.js version: [e.g. 18.17.0]
+        - Package manager: [e.g. bun, npm, yarn]
+        - Browser: [e.g. Chrome 117, Firefox 118]
+        - Docker version: [e.g. 24.0.5]
+        - Tenanta version: [e.g. 1.0.0]
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📋 Logs
+      description: Please provide relevant logs (remove sensitive information)
+      placeholder: |
+        Paste relevant logs here...
+        
+        Client logs (browser console):
+        ```
+        [logs here]
+        ```
+        
+        Server logs:
+        ```
+        [logs here]
+        ```
+      render: text
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 📚 Additional Context
+      description: Add any other context about the problem here.
+      placeholder: Any additional information that might help us understand the issue...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+        - label: I am using the latest version of Tenanta
+          required: true
+        - label: I have checked the documentation and troubleshooting guides
+          required: true
+        - label: I have provided all the required information above
+          required: true

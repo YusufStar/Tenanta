@@ -1,0 +1,145 @@
+name: 💡 Feature Request
+description: Suggest an idea for Tenanta
+title: "[Feature]: "
+labels: ["enhancement", "feature-request"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! 💡
+        
+        Before submitting, please:
+        - Search existing feature requests to avoid duplicates
+        - Check our roadmap and planned features
+        - Consider if this could be implemented as a plugin or extension
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 🎯 Problem Statement
+      description: Is your feature request related to a problem? Please describe.
+      placeholder: I'm always frustrated when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 💡 Proposed Solution
+      description: Describe the solution you'd like to see implemented.
+      placeholder: I would like to see...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 Alternatives Considered
+      description: Describe any alternative solutions or features you've considered.
+      placeholder: I've also considered...
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: 🧩 Component
+      description: Which component would this feature affect?
+      options:
+        - Client (Frontend)
+        - Database API (Backend)
+        - Database Management
+        - Docker Configuration
+        - Documentation
+        - Multiple Components
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 🎯 Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would improve workflow
+        - High - Critical for my use case
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: 🎮 Use Case
+      description: Describe your specific use case and how this feature would help.
+      placeholder: |
+        In my workflow, I need to...
+        This feature would help me by...
+    validations:
+      required: true
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: 🎨 Mockups/Examples
+      description: If applicable, add mockups, wireframes, or examples from other tools.
+      placeholder: Drag and drop images here or describe the UI/UX...
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: 🔧 Implementation Ideas
+      description: If you have ideas about how this could be implemented, please share them.
+      placeholder: |
+        This could be implemented by...
+        Required changes might include...
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: 📊 Estimated Complexity
+      description: How complex do you think this feature would be to implement?
+      options:
+        - Simple - Minor changes
+        - Medium - Moderate changes
+        - Complex - Major changes
+        - Unknown
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 🎯 Feature Scope
+      description: What aspects would this feature include?
+      options:
+        - label: User Interface changes
+        - label: API changes
+        - label: Database schema changes
+        - label: New configuration options
+        - label: Documentation updates
+        - label: Testing requirements
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 📚 Additional Context
+      description: Add any other context, links, or references about the feature request.
+      placeholder: |
+        Related links:
+        - Similar feature in other tools: 
+        - Relevant documentation: 
+        - Community discussion:
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing feature requests to avoid duplicates
+          required: true
+        - label: I have checked the project roadmap
+          required: true
+        - label: I have provided a clear use case and problem statement
+          required: true
+        - label: I understand this is a suggestion and may not be implemented
+          required: true

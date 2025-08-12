@@ -1,0 +1,77 @@
+name: 📚 Documentation Issue
+description: Report an issue with documentation
+title: "[Docs]: "
+labels: ["documentation"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation! 📚
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: 📖 Documentation Type
+      description: What type of documentation issue is this?
+      options:
+        - README.md
+        - API Documentation
+        - Installation Guide
+        - Contributing Guide
+        - Code Comments
+        - Inline Help Text
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: 🎯 Issue Type
+      description: What kind of documentation issue is this?
+      options:
+        - Missing documentation
+        - Incorrect information
+        - Outdated information
+        - Unclear/confusing content
+        - Broken links
+        - Typos/grammar
+        - Formatting issues
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: 📍 Location
+      description: Where is the documentation issue located?
+      placeholder: |
+        - File: README.md
+        - Section: Installation
+        - Line: 42
+        - URL: https://...
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-content
+    attributes:
+      label: 📝 Current Content
+      description: What does the current documentation say? (copy/paste or quote)
+      placeholder: Current text that needs to be fixed...
+
+  - type: textarea
+    id: suggested-content
+    attributes:
+      label: ✏️ Suggested Content
+      description: What should the documentation say instead?
+      placeholder: Suggested replacement text...
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 📚 Additional Context
+      description: Any additional context about the documentation issue.
+      placeholder: Why is this change needed? Any references or examples?

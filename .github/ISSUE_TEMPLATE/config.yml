@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 General Discussion
+    url: https://github.com/YusufStar/Tenanta/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 🆘 Support
+    url: https://github.com/YusufStar/Tenanta/discussions/categories/q-a
+    about: Get help with installation, configuration, and usage
+  - name: 🔒 Security Issue
+    url: https://github.com/YusufStar/Tenanta/security/advisories/new
+    about: Report security vulnerabilities privately
