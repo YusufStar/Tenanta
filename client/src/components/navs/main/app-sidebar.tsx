@@ -43,10 +43,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader className="flex flex-row w-full justify-between items-center gap-2">
-        <span className="text-lg font-medium">
-          Tenanta
-        </span>
+      <SidebarHeader className="flex flex-row w-full justify-between items-center gap-2 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold text-sm">
+            T
+          </div>
+          <span className="text-lg font-semibold text-foreground">
+            Tenanta
+          </span>
+        </div>
+        <ModeToggle />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
